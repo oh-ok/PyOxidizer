@@ -109,7 +109,7 @@ pub(crate) fn get_module_state(m: &PyModule) -> Result<&mut ModuleState, PyErr> 
 pub extern "C" fn PyInit_oxidized_importer() -> *mut pyffi::PyObject {
     let py = unsafe { Python::assume_gil_acquired() };
 
-    let module = unsafe { pyffi::PyModule_Create(&mut MODULE_DEF) } as *mut pyffi::PyObject;
+    let module = unsafe { pyffi::PyModule_Create(&raw mut MODULE_DEF) } as *mut pyffi::PyObject;
 
     if module.is_null() {
         return module;
