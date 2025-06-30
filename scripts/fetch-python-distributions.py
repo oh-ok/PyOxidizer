@@ -6,7 +6,6 @@
 """Emit python_distributions.rs boilerplate for python-build-standalone release."""
 
 import argparse
-import hashlib
 import urllib.request
 
 from github import Github
@@ -26,17 +25,8 @@ PythonDistributionRecord {{
 
 
 def download_and_hash(url):
-    with urllib.request.urlopen(url) as r:
-        h = hashlib.sha256()
-
-        while True:
-            chunk = r.read(32768)
-            if not chunk:
-                break
-
-            h.update(chunk)
-
-        return h.hexdigest()
+    with urllib.request.urlopen(url + ".sha256") as r:
+        return r.read().decode().strip()
 
 
 def format_record(record):
@@ -49,14 +39,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--api-token", help="GitHub API token", required=True)
     parser.add_argument(
-        "--tag", help="python-build-standalone release tag", required=True
+        "--tag", help="python-build-standalone release tag", default="20241206"
     )
 
     args = parser.parse_args()
 
     g = Github(args.api_token)
 
-    repo = g.get_repo("indygreg/python-build-standalone")
+    repo = g.get_repo("astral-sh/python-build-standalone")
 
     release = repo.get_release(args.tag)
 
@@ -124,7 +114,6 @@ def main():
 
     lines = [
         "// Linux glibc linked.",
-        format_record(records["3.8-x86_64-unknown-linux-gnu-pgo"]),
         format_record(records["3.9-aarch64-unknown-linux-gnu-noopt"]),
         format_record(records["3.9-x86_64-unknown-linux-gnu-pgo"]),
         format_record(records["3.9-x86_64_v2-unknown-linux-gnu-pgo"]),
@@ -133,15 +122,35 @@ def main():
         format_record(records["3.10-x86_64-unknown-linux-gnu-pgo"]),
         format_record(records["3.10-x86_64_v2-unknown-linux-gnu-pgo"]),
         format_record(records["3.10-x86_64_v3-unknown-linux-gnu-pgo"]),
+        format_record(records["3.11-aarch64-unknown-linux-gnu-noopt"]),
+        format_record(records["3.11-x86_64-unknown-linux-gnu-pgo"]),
+        format_record(records["3.11-x86_64_v2-unknown-linux-gnu-pgo"]),
+        format_record(records["3.11-x86_64_v3-unknown-linux-gnu-pgo"]),
+        format_record(records["3.12-aarch64-unknown-linux-gnu-noopt"]),
+        format_record(records["3.12-x86_64-unknown-linux-gnu-pgo"]),
+        format_record(records["3.12-x86_64_v2-unknown-linux-gnu-pgo"]),
+        format_record(records["3.12-x86_64_v3-unknown-linux-gnu-pgo"]),
+        format_record(records["3.13-aarch64-unknown-linux-gnu-noopt"]),
+        format_record(records["3.13-x86_64-unknown-linux-gnu-pgo"]),
+        format_record(records["3.13-x86_64_v2-unknown-linux-gnu-pgo"]),
+        format_record(records["3.13-x86_64_v3-unknown-linux-gnu-pgo"]),
         "",
         "// Linux musl.",
-        format_record(records["3.8-x86_64-unknown-linux-musl-noopt"]),
         format_record(records["3.9-x86_64-unknown-linux-musl-noopt"]),
         format_record(records["3.9-x86_64_v2-unknown-linux-musl-noopt"]),
         format_record(records["3.9-x86_64_v3-unknown-linux-musl-noopt"]),
         format_record(records["3.10-x86_64-unknown-linux-musl-noopt"]),
         format_record(records["3.10-x86_64_v2-unknown-linux-musl-noopt"]),
         format_record(records["3.10-x86_64_v3-unknown-linux-musl-noopt"]),
+        format_record(records["3.11-x86_64-unknown-linux-musl-noopt"]),
+        format_record(records["3.11-x86_64_v2-unknown-linux-musl-noopt"]),
+        format_record(records["3.11-x86_64_v3-unknown-linux-musl-noopt"]),
+        format_record(records["3.12-x86_64-unknown-linux-musl-noopt"]),
+        format_record(records["3.12-x86_64_v2-unknown-linux-musl-noopt"]),
+        format_record(records["3.12-x86_64_v3-unknown-linux-musl-noopt"]),
+        format_record(records["3.13-x86_64-unknown-linux-musl-noopt"]),
+        format_record(records["3.13-x86_64_v2-unknown-linux-musl-noopt"]),
+        format_record(records["3.13-x86_64_v3-unknown-linux-musl-noopt"]),
         "",
         "// The order here is important because we will choose the",
         "// first one. We prefer shared distributions on Windows because",
@@ -151,28 +160,31 @@ def main():
         "// with.",
         "",
         "// Windows shared.",
-        format_record(records["3.8-i686-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.9-i686-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.10-i686-pc-windows-msvc-shared-pgo"]),
-        format_record(records["3.8-x86_64-pc-windows-msvc-shared-pgo"]),
+        format_record(records["3.11-i686-pc-windows-msvc-shared-pgo"]),
+        format_record(records["3.12-i686-pc-windows-msvc-shared-pgo"]),
+        format_record(records["3.13-i686-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.9-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.10-x86_64-pc-windows-msvc-shared-pgo"]),
+        format_record(records["3.11-x86_64-pc-windows-msvc-shared-pgo"]),
+        format_record(records["3.12-x86_64-pc-windows-msvc-shared-pgo"]),
+        format_record(records["3.13-x86_64-pc-windows-msvc-shared-pgo"]),
         "",
         "// Windows static.",
-        format_record(records["3.8-i686-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.9-i686-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.10-i686-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.8-x86_64-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.9-x86_64-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.10-x86_64-pc-windows-msvc-static-noopt"]),
+        "// DEPRECATED",
         "",
         "// macOS.",
-        format_record(records["3.8-aarch64-apple-darwin-pgo"]),
         format_record(records["3.9-aarch64-apple-darwin-pgo"]),
         format_record(records["3.10-aarch64-apple-darwin-pgo"]),
-        format_record(records["3.8-x86_64-apple-darwin-pgo"]),
+        format_record(records["3.11-aarch64-apple-darwin-pgo"]),
+        format_record(records["3.12-aarch64-apple-darwin-pgo"]),
+        format_record(records["3.13-aarch64-apple-darwin-pgo"]),
         format_record(records["3.9-x86_64-apple-darwin-pgo"]),
         format_record(records["3.10-x86_64-apple-darwin-pgo"]),
+        format_record(records["3.11-x86_64-apple-darwin-pgo"]),
+        format_record(records["3.12-x86_64-apple-darwin-pgo"]),
+        format_record(records["3.13-x86_64-apple-darwin-pgo"]),
     ]
 
     for line in "\n".join(lines).splitlines(False):
