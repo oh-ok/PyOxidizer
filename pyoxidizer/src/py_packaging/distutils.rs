@@ -103,13 +103,25 @@ pub fn prepare_hacked_distutils(
     let python_path = python_paths.join(path_separator);
 
     let mut res = HashMap::new();
-    res.insert("PYTHONPATH".to_string(), python_path);
     res.insert(
         "PYOXIDIZER_DISTUTILS_STATE_DIR".to_string(),
         state_dir.display().to_string(),
     );
     res.insert("PYOXIDIZER".to_string(), "1".to_string());
 
+    // NOTE: PEP517 enforces build isolation so PYTHONPATH gets unset.
+    // .pth files are respected however, so we use that instead.
+    res.insert("PYOXIDIZER_DISTUTILS_PATH".to_string(), python_path.to_string());
+
+    let pyoxidizer_hack_pth = orig_distutils_path.parent().unwrap()
+        .join("site-packages")
+        .join("_pyoxidizer_distutils_hack.pth");
+    if ! pyoxidizer_hack_pth.exists() {
+        std::fs::write(
+            &pyoxidizer_hack_pth,
+            "import os,sys;v='PYOXIDIZER_DISTUTILS_PATH';v in os.environ and all(sys.path.insert(0, p) for p in os.environ[v].split(os.pathsep)[::-1])\n"
+        ).context(format!("writing {}", pyoxidizer_hack_pth.display()))?;
+    }
     Ok(res)
 }
 
@@ -191,7 +203,7 @@ pub fn read_built_extensions(state_dir: &Path) -> Result<Vec<PythonExtensionModu
                 dynamic_library: None,
                 dynamic_filename: None,
                 framework: false,
-                system: false,
+                system: true, // experiment: any libraries linked should be all good to add a -l flag to anyway. 
             })
             .collect();
 
