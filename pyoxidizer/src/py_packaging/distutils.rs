@@ -36,6 +36,11 @@ static MODIFIED_DISTUTILS_FILES: Lazy<BTreeMap<&'static str, &'static [u8]>> = L
         include_bytes!("../distutils/unixccompiler.py"),
     );
 
+    res.insert(
+        "sysconfig.py",
+        include_bytes!("../distutils/sysconfig.py"),
+    );
+
     res
 });
 
@@ -53,6 +58,7 @@ static MODIFIED_DISTUTILS_FILES: Lazy<BTreeMap<&'static str, &'static [u8]>> = L
 /// monkeypatch. People do weird things in setup.py scripts and we want to
 /// support as many as possible.
 pub fn prepare_hacked_distutils(
+    stdlib_path: &Path,
     orig_distutils_path: &Path,
     dest_dir: &Path,
     extra_python_paths: &[&Path],
@@ -113,15 +119,14 @@ pub fn prepare_hacked_distutils(
     // .pth files are respected however, so we use that instead.
     res.insert("PYOXIDIZER_DISTUTILS_PATH".to_string(), python_path.to_string());
 
-    let pyoxidizer_hack_pth = orig_distutils_path.parent().unwrap()
+    let pyoxidizer_hack_pth = stdlib_path
         .join("site-packages")
         .join("_pyoxidizer_distutils_hack.pth");
-    if ! pyoxidizer_hack_pth.exists() {
-        std::fs::write(
-            &pyoxidizer_hack_pth,
-            "import os,sys;v='PYOXIDIZER_DISTUTILS_PATH';v in os.environ and all(sys.path.insert(0, p) for p in os.environ[v].split(os.pathsep)[::-1])\n"
-        ).context(format!("writing {}", pyoxidizer_hack_pth.display()))?;
-    }
+
+    std::fs::write(
+        &pyoxidizer_hack_pth,
+        "import os,sys;v='PYOXIDIZER_DISTUTILS_PATH';v in os.environ and all(sys.path.insert(0, p) for p in os.environ[v].split(os.pathsep)[::-1])\n"
+    ).context(format!("writing {}", pyoxidizer_hack_pth.display()))?;
     Ok(res)
 }
 

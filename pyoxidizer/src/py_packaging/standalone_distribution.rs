@@ -236,9 +236,9 @@ fn parse_python_json(path: &Path) -> Result<PythonJsonMain> {
                 .as_str()
                 .ok_or_else(|| anyhow!("unable to parse version as a string"))?;
 
-            if version != "7" {
+            if !["7", "8"].contains(&version) {
                 return Err(anyhow!(
-                    "expected version 7 standalone distribution; found version {}",
+                    "expected either version 7 or version 8 standalone distribution; found version {}",
                     version
                 ));
             }
@@ -1324,13 +1324,42 @@ impl PythonDistribution for StandaloneDistribution {
         dest_dir: &Path,
         extra_python_paths: &[&Path],
     ) -> Result<HashMap<String, String>> {
+        let python_version = match self
+            .python_major_minor_version()
+            .split_once(".")
+            .map(|v| (v.0.parse::<u16>(), v.1.parse::<u16>()))
+        {
+            Some((Ok(major), Ok(minor))) => (major, minor),
+            _ => (3, 9),
+        };
+
         let mut res = match libpython_link_mode {
             // We need to patch distutils if the distribution is statically linked.
-            LibpythonLinkMode::Static => prepare_hacked_distutils(
-                &self.stdlib_path.join("distutils"),
-                dest_dir,
-                extra_python_paths,
-            ),
+            LibpythonLinkMode::Static => {
+                let mut distutils_stdlib = self.stdlib_path.clone();
+                if python_version >= (3, 12) {
+                    distutils_stdlib = dest_dir.join("stdlib");
+                    cmd(
+                        self.python_exe_path(),
+                        [
+                            "-m",
+                            "pip",
+                            "install",
+                            "standard-distutils==3.11.9",
+                            "--target",
+                            &distutils_stdlib.display().to_string(),
+                        ],
+                    )
+                    .run()
+                    .context("fetching distutils")?;
+                }
+                prepare_hacked_distutils(
+                    &self.stdlib_path,
+                    &distutils_stdlib.join("distutils"),
+                    dest_dir,
+                    extra_python_paths,
+                )
+            }
             LibpythonLinkMode::Dynamic => Ok(HashMap::new()),
         }?;
 
