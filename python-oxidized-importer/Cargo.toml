@@ -70,3 +70,6 @@ extension-module = ["pyo3/extension-module"]
 
 # Enable support for importing from zip files.
 zipimport = ["zip"]
+
+[build-dependencies]
+pyo3-build-config = { version = "0.18.3", features = ["resolve-config"] }

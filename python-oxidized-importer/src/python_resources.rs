@@ -33,6 +33,16 @@ use {
     },
 };
 
+// Since these are technically a private implementation detail,
+// they're not exported by pyo3, so we need to define them.
+#[cfg(not(PyPy))]
+#[cfg(Py_3_11)]
+extern "C" {
+    pub static mut _PyImport_FrozenBootstrap: *const pyffi::_frozen;
+    pub static mut _PyImport_FrozenStdlib: *const pyffi::_frozen;
+    pub static mut _PyImport_FrozenTest: *const pyffi::_frozen;
+}
+
 const ENOENT: c_int = 2;
 
 /// Determines whether an entry represents an importable Python module.
@@ -571,8 +581,26 @@ impl<'a> PythonResourcesState<'a, u8> {
 
     /// Load `frozen` modules from the Python interpreter.
     pub fn index_interpreter_frozen_modules(&mut self) -> Result<(), &'static str> {
+        #[cfg(not(PyPy))]
+        #[cfg(Py_3_11)]
+        {
+            self.index_interpreter_frozen_modules_from_ptr(unsafe { _PyImport_FrozenBootstrap })?;
+            self.index_interpreter_frozen_modules_from_ptr(unsafe { _PyImport_FrozenStdlib })?;
+            self.index_interpreter_frozen_modules_from_ptr(unsafe { _PyImport_FrozenTest })?;
+        }
+        self.index_interpreter_frozen_modules_from_ptr(unsafe { pyffi::PyImport_FrozenModules })
+    }
+
+    pub fn index_interpreter_frozen_modules_from_ptr(
+        &mut self,
+        frozen_modules: *const pyffi::_frozen,
+    ) -> Result<(), &'static str> {
+        if frozen_modules.is_null() {
+            return Ok(());
+        }
+
         for i in 0.. {
-            let record = unsafe { pyffi::PyImport_FrozenModules.offset(i) };
+            let record = unsafe { frozen_modules.offset(i) };
 
             if unsafe { *record }.name.is_null() {
                 break;
