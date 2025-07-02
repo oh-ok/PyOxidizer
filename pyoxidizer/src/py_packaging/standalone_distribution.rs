@@ -837,10 +837,11 @@ impl StandaloneDistribution {
                 if let Some(license_paths) = &entry.license_paths {
                     for path in license_paths {
                         let path = python_path.join(path);
-                        let text = std::fs::read_to_string(&path)
-                            .with_context(|| format!("reading {}", path.display()))?;
-
-                        license.add_license_text(text);
+                        if path.is_file() {
+                            let text = std::fs::read_to_string(&path)
+                                .with_context(|| format!("reading {}", path.display()))?;
+                            license.add_license_text(text);
+                        }    
                     }
                 }
 
