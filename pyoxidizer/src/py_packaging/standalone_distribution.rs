@@ -275,6 +275,7 @@ pub fn python_exe_path(dist_dir: &Path) -> Result<PathBuf> {
     Ok(dist_dir.join("python").join(&pi.python_exe))
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct PythonPaths {
     pub prefix: PathBuf,

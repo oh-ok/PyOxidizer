@@ -306,7 +306,7 @@ pub fn install_rust_toolchain(
         }
     }
 
-    lock.unlock().context("unlocking")?;
+    fs2::FileExt::unlock(&lock).context("unlocking")?;
 
     let exe_suffix = if host_triple.contains("-windows-") {
         ".exe"

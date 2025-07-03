@@ -2992,7 +2992,7 @@ pub mod tests {
             assert_eq!(orig.object_file_data.len(), objects_len);
 
             // Makes compare easier.
-            let mut e = orig.to_mut();
+            let e = orig.to_mut();
             e.shared_library = None;
             e.object_file_data = vec![];
 
