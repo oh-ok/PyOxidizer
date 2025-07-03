@@ -628,11 +628,12 @@ static mut REPLACED_BUILTIN_EXTENSIONS: Option<Vec<pyffi::_inittab>> = None;
 /// We maintain our own shadow copy of this array and synchronize it
 /// to PyImport_Inittab during interpreter initialization so we don't
 /// call the broken APIs.
+#[allow(static_mut_refs)]
 fn set_pyimport_inittab(config: &OxidizedPythonInterpreterConfig) {
     // If this is our first time, copy the canonical source to our shadow
     // copy.
     unsafe {
-        if ORIGINAL_BUILTIN_EXTENSIONS.is_none() {
+        if let None = ORIGINAL_BUILTIN_EXTENSIONS {
             let mut entries: Vec<pyffi::_inittab> = Vec::new();
 
             for i in 0.. {

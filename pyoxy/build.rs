@@ -5,6 +5,7 @@
 use std::path::PathBuf;
 
 fn main() {
+    println!("cargo::rustc-check-cfg=cfg(stdlib_packed_resources)");
     println!("cargo:rerun-if-env-changed=PYO3_CONFIG_FILE");
 
     // By default Rust will not export dynamic symbols from built executables.

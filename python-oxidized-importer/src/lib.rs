@@ -104,6 +104,7 @@ pub(crate) fn get_module_state(m: &PyModule) -> Result<&mut ModuleState, PyErr> 
 /// We don't use the macros in the pyo3 crate because they are somewhat
 /// opinionated about how things should work. e.g. they call
 /// PyEval_InitThreads(), which is undesired. We want total control.
+#[allow(static_mut_refs)]
 #[allow(non_snake_case)]
 #[no_mangle]
 pub extern "C" fn PyInit_oxidized_importer() -> *mut pyffi::PyObject {
