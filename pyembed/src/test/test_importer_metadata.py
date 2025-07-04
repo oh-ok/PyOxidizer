@@ -23,6 +23,8 @@ from oxidized_importer import (
     find_resources_in_path,
 )
 
+EntryPoints = getattr(importlib.metadata, "EntryPoints", list)
+
 
 class TestImporterMetadata(unittest.TestCase):
     def setUp(self):
@@ -222,7 +224,7 @@ class TestImporterMetadata(unittest.TestCase):
         eps = dists[0].entry_points
 
         # This is kinda weird but it is what the stdlib does when it receives None.
-        self.assertIsInstance(eps, list)
+        self.assertIsInstance(eps, EntryPoints)
         self.assertEqual(len(eps), 0)
 
     def test_populated_entry_points(self):
@@ -239,10 +241,10 @@ class TestImporterMetadata(unittest.TestCase):
 
         eps = dists[0].entry_points
 
-        self.assertIsInstance(eps, list)
+        self.assertIsInstance(eps, EntryPoints)
         self.assertEqual(len(eps), 1)
 
-        ep = eps[0]
+        ep = next(iter(eps))
         self.assertIsInstance(ep, importlib.metadata.EntryPoint)
 
         self.assertEqual(ep.name, "script")

@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import sys
 import unittest
 
 SYMBOL_ATTRIBUTES = {
@@ -189,6 +190,17 @@ COMMON_FUNCTION_DUNDER_ATTRIBUTES = {
     "__subclasshook__",
     "__text_signature__",
 }
+if sys.version_info[:2] >= (3, 11):
+    COMMON_FUNCTION_DUNDER_ATTRIBUTES.update(
+        [
+            "__getstate__",
+        ]
+    )
+    COMMON_CLASS_DUNDER_ATTRIBUTES.update(
+        [
+            "__getstate__",
+        ]
+    )
 
 
 class TestImporterModule(unittest.TestCase):
@@ -203,7 +215,7 @@ class TestImporterModule(unittest.TestCase):
     def test_symbol_attrs(self):
         import oxidized_importer as importer
 
-        for (symbol, expected) in sorted(SYMBOL_ATTRIBUTES.items()):
+        for symbol, expected in sorted(SYMBOL_ATTRIBUTES.items()):
             o = getattr(importer, symbol)
 
             if symbol.lower() == symbol:
