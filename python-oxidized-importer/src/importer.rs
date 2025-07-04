@@ -28,11 +28,11 @@ use {
         OXIDIZED_IMPORTER_NAME_STR,
     },
     pyo3::{
-        exceptions::{PyImportError, PyValueError},
+        exceptions::{PyImportError, PyTypeError, PyValueError},
         ffi as pyffi,
         prelude::*,
         types::{PyBytes, PyDict, PyList, PyString, PyTuple},
-        AsPyPointer, FromPyPointer, PyNativeType, PyTraverseError, PyVisit,
+        IntoPyObjectExt, PyTraverseError, PyVisit,
     },
     python_packaging::resource::BytecodeOptimizationLevel,
     std::sync::Arc,
@@ -60,10 +60,9 @@ type py_init_fn = extern "C" fn() -> *mut pyffi::PyObject;
 #[cfg(windows)]
 fn extension_module_shared_library_create_module(
     resources_state: &PythonResourcesState<u8>,
-    py: Python,
-    sys_modules: &PyAny,
-    spec: &PyAny,
-    name_py: &PyAny,
+    sys_modules: &Bound<PyAny>,
+    spec: &Bound<PyAny>,
+    name_py: &Bound<PyAny>,
     name: &str,
     library_data: &[u8],
 ) -> PyResult<Py<PyAny>> {
@@ -108,10 +107,9 @@ fn extension_module_shared_library_create_module(
 #[cfg(unix)]
 fn extension_module_shared_library_create_module(
     _resources_state: &PythonResourcesState<u8>,
-    _py: Python,
-    _sys_modules: &PyAny,
-    _spec: &PyAny,
-    _name_py: &PyAny,
+    _sys_modules: &Bound<PyAny>,
+    _spec: &Bound<PyAny>,
+    _name_py: &Bound<PyAny>,
     _name: &str,
     _library_data: &[u8],
 ) -> PyResult<Py<PyAny>> {
@@ -291,20 +289,24 @@ pub struct ImporterState {
 impl ImporterState {
     fn new<'a>(
         py: Python,
-        importer_module: &PyModule,
-        bootstrap_module: &PyModule,
+        importer_module: Bound<PyModule>,
+        bootstrap_module: Bound<PyModule>,
         resources_state: Box<PythonResourcesState<'a, u8>>,
     ) -> Result<Self, PyErr> {
-        let decode_source = importer_module.getattr("decode_source")?.into_py(py);
+        let decode_source = importer_module
+            .getattr("decode_source")
+            .map(Bound::unbind)?;
 
-        let io_module = py.import("_io")?.into_py(py);
-        let marshal_module = py.import("marshal")?;
+        let io_module = py.import("_io").map(Bound::unbind)?;
+        let marshal_module = py.import("marshal").map(Bound::unbind)?;
 
-        let imp_module = bootstrap_module.getattr("_imp")?;
-        let imp_module = imp_module.downcast::<PyModule>()?.into_py(py);
-        let sys_module = bootstrap_module.getattr("sys")?;
-        let sys_module = sys_module.downcast::<PyModule>()?;
-        let meta_path_object = sys_module.getattr("meta_path")?;
+        let imp_module: Py<PyModule> =
+            bootstrap_module.getattr("_imp").and_then(|o| o.extract())?;
+        let sys_module: Py<PyModule> = bootstrap_module.getattr("sys").and_then(|o| o.extract())?;
+        let meta_path: Bound<PyList> = sys_module
+            .bind(py)
+            .getattr("meta_path")
+            .and_then(|o| o.extract())?;
 
         // We should be executing as part of
         // _frozen_importlib_external._install_external_importers().
@@ -312,38 +314,35 @@ impl ImporterState {
         // sys.meta_path with [BuiltinImporter, FrozenImporter]. Those should be the
         // only meta path importers present.
 
-        let meta_path = meta_path_object.downcast::<PyList>()?;
         if meta_path.len() < 2 {
             return Err(PyValueError::new_err(
                 "sys.meta_path does not contain 2 values",
             ));
         }
 
-        let builtin_importer = meta_path.get_item(0)?.into_py(py);
-        let frozen_importer = meta_path.get_item(1)?.into_py(py);
+        let builtin_importer = meta_path.get_item(0).map(Bound::unbind)?;
+        let frozen_importer = meta_path.get_item(1).map(Bound::unbind)?;
 
-        let marshal_loads = marshal_module.getattr("loads")?.into_py(py);
+        let marshal_loads = marshal_module.getattr(py, "loads")?;
         let call_with_frames_removed = bootstrap_module
-            .getattr("_call_with_frames_removed")?
-            .into_py(py);
-        let module_spec_type = bootstrap_module.getattr("ModuleSpec")?.into_py(py);
+            .getattr("_call_with_frames_removed")
+            .map(Bound::unbind)?;
+        let module_spec_type = bootstrap_module.getattr("ModuleSpec").map(Bound::unbind)?;
 
-        let builtins_module =
-            unsafe { PyDict::from_borrowed_ptr_or_err(py, pyffi::PyEval_GetBuiltins()) }?;
+        let builtins_module: Py<PyDict> =
+            unsafe { Py::from_borrowed_ptr_or_err(py, pyffi::PyEval_GetBuiltins()) }?;
 
-        let exec_fn = match builtins_module.get_item("exec") {
-            Some(v) => v,
+        let exec_fn = match builtins_module.bind(py).get_item("exec")? {
+            Some(v) => v.unbind(),
             None => {
                 return Err(PyValueError::new_err("could not obtain __builtins__.exec"));
             }
-        }
-        .into_py(py);
+        };
 
-        let sys_flags = sys_module.getattr("flags")?;
-        let sys_module = sys_module.into_py(py);
+        let sys_flags = sys_module.getattr(py, "flags")?;
 
-        let optimize_value = sys_flags.getattr("optimize")?;
-        let optimize_value = optimize_value.extract::<i64>()?;
+        let optimize_value = sys_flags.getattr(py, "optimize")?;
+        let optimize_value = optimize_value.extract::<i64>(py)?;
 
         let optimize_level = match optimize_value {
             0 => Ok(BytecodeOptimizationLevel::Zero),
@@ -481,7 +480,7 @@ impl OxidizedFinder {
     /// Construct an instance from a module and resources state.
     pub fn new_from_module_and_resources<'a>(
         py: Python,
-        m: &PyModule,
+        m: Bound<PyModule>,
         resources_state: Box<PythonResourcesState<'a, u8>>,
         importer_state_callback: Option<impl FnOnce(&mut ImporterState)>,
     ) -> PyResult<OxidizedFinder> {
@@ -516,11 +515,11 @@ impl OxidizedFinder {
 
     #[pyo3(signature=(fullname, path, target=None))]
     fn find_spec<'p>(
-        slf: &'p PyCell<Self>,
+        slf: &Bound<'p, Self>,
         fullname: String,
-        path: &PyAny,
-        target: Option<&PyAny>,
-    ) -> PyResult<&'p PyAny> {
+        path: Bound<'p, PyAny>,
+        target: Option<Bound<'p, PyAny>>,
+    ) -> PyResult<Bound<'p, PyAny>> {
         let py = slf.py();
         let finder = slf.borrow();
 
@@ -530,43 +529,43 @@ impl OxidizedFinder {
             .resolve_importable_module(&fullname, finder.state.optimize_level)
         {
             Some(module) => module,
-            None => return Ok(py.None().into_ref(py)),
+            None => return Ok(py.None().into_bound(py)),
         };
 
         match module.flavor {
             ModuleFlavor::Extension | ModuleFlavor::SourceBytecode => module.resolve_module_spec(
                 py,
-                finder.state.module_spec_type.clone_ref(py).into_ref(py),
-                slf,
+                finder.state.module_spec_type.bind(py),
+                slf.as_any(),
                 finder.state.optimize_level,
             ),
             ModuleFlavor::Builtin => {
                 // BuiltinImporter.find_spec() always returns None if `path` is defined.
                 // And it doesn't use `target`. So don't proxy these values.
-                Ok(finder
-                    .state
-                    .builtin_importer
-                    .call_method(py, "find_spec", (fullname,), None)?
-                    .into_ref(py))
+                Ok(finder.state.builtin_importer.bind(py).call_method(
+                    "find_spec",
+                    (fullname,),
+                    None,
+                )?)
             }
-            ModuleFlavor::Frozen => Ok(finder
-                .state
-                .frozen_importer
-                .call_method(py, "find_spec", (fullname, path, target), None)?
-                .into_ref(py)),
+            ModuleFlavor::Frozen => Ok(finder.state.frozen_importer.bind(py).call_method(
+                "find_spec",
+                (fullname, path, target),
+                None,
+            )?),
         }
     }
 
     fn find_module<'p>(
-        slf: &'p PyCell<Self>,
-        fullname: &PyAny,
-        path: &PyAny,
-    ) -> PyResult<&'p PyAny> {
+        slf: &Bound<'p, Self>,
+        fullname: &Bound<'p, PyAny>,
+        path: &Bound<'p, PyAny>,
+    ) -> PyResult<Bound<'p, PyAny>> {
         let find_spec = slf.getattr("find_spec")?;
         let spec = find_spec.call((fullname, path), None)?;
 
         if spec.is_none() {
-            Ok(slf.py().None().into_ref(slf.py()))
+            Ok(slf.py().None().into_bound(slf.py()))
         } else {
             spec.getattr("loader")
         }
@@ -580,7 +579,7 @@ impl OxidizedFinder {
 
     // Start of importlib.abc.Loader interface.
 
-    fn create_module(slf: &PyCell<Self>, spec: &PyAny) -> PyResult<Py<PyAny>> {
+    fn create_module(slf: &Bound<Self>, spec: &Bound<PyAny>) -> PyResult<Py<PyAny>> {
         let py = slf.py();
         let finder = slf.borrow();
         let state = &finder.state;
@@ -611,10 +610,9 @@ impl OxidizedFinder {
 
                 extension_module_shared_library_create_module(
                     state.get_resources_state(),
-                    py,
-                    sys_modules.into_ref(py),
-                    spec,
-                    name,
+                    sys_modules.bind(py),
+                    &spec,
+                    &name,
                     &key,
                     library_data,
                 )
@@ -631,7 +629,7 @@ impl OxidizedFinder {
         }
     }
 
-    fn exec_module(slf: &PyCell<Self>, module: &PyAny) -> PyResult<Py<PyAny>> {
+    fn exec_module(slf: &Bound<Self>, module: &Bound<PyAny>) -> PyResult<Py<PyAny>> {
         let py = slf.py();
         let finder = slf.borrow();
         let state = &finder.state;
@@ -654,8 +652,8 @@ impl OxidizedFinder {
         if let Some(bytecode) = entry.resolve_bytecode(
             py,
             state.optimize_level,
-            state.decode_source.as_ref(py),
-            state.io_module.as_ref(py),
+            state.decode_source.as_ref(),
+            &state.io_module,
         )? {
             let code = state.marshal_loads.call(py, (bytecode,), None)?;
             let dict = module.getattr("__dict__")?;
@@ -689,12 +687,12 @@ impl OxidizedFinder {
                     // We pass force=True to ensure the call doesn't fail.
                     let kwargs = PyDict::new(py);
                     kwargs.set_item("force", true)?;
-                    module.call_method("set_start_method", (method,), Some(kwargs))?;
+                    module.call_method("set_start_method", (method,), Some(&kwargs))?;
                 }
             }
             "pkg_resources" => {
                 if state.pkg_resources_import_auto_register {
-                    register_pkg_resources_with_module(py, module)?;
+                    register_pkg_resources_with_module(py, module.downcast::<PyModule>()?)?;
                 }
             }
             _ => {}
@@ -714,7 +712,7 @@ impl OxidizedFinder {
     /// to the data stored. OSError is to be raised if the path cannot be
     /// found. The path is expected to be constructed using a module’s __file__
     /// attribute or an item from a package’s __path__.
-    fn get_data<'p>(slf: &'p PyCell<Self>, path: &str) -> PyResult<&'p PyAny> {
+    fn get_data<'p>(slf: &Bound<Self>, path: &str) -> PyResult<Py<PyAny>> {
         slf.borrow()
             .state
             .get_resources_state()
@@ -725,7 +723,7 @@ impl OxidizedFinder {
 
     // Start of importlib.abc.InspectLoader interface.
 
-    fn get_code(slf: &PyCell<Self>, fullname: &str) -> PyResult<Py<PyAny>> {
+    fn get_code(slf: &Bound<Self>, fullname: &str) -> PyResult<Py<PyAny>> {
         let py = slf.py();
         let finder = slf.borrow();
         let state = &finder.state;
@@ -743,8 +741,8 @@ impl OxidizedFinder {
         if let Some(bytecode) = module.resolve_bytecode(
             py,
             state.optimize_level,
-            state.decode_source.as_ref(py),
-            state.io_module.as_ref(py),
+            state.decode_source.as_ref(),
+            &state.io_module,
         )? {
             state.marshal_loads.call(py, (bytecode,), None)
         } else if module.flavor == ModuleFlavor::Frozen {
@@ -756,7 +754,7 @@ impl OxidizedFinder {
         }
     }
 
-    fn get_source(slf: &PyCell<Self>, fullname: &str) -> PyResult<Py<PyAny>> {
+    fn get_source(slf: &Bound<Self>, fullname: &str) -> PyResult<Py<PyAny>> {
         let py = slf.py();
         let finder = slf.borrow();
         let state = &finder.state;
@@ -770,14 +768,11 @@ impl OxidizedFinder {
             None => return Ok(py.None()),
         };
 
-        let source = module.resolve_source(
-            py,
-            state.decode_source.as_ref(py),
-            state.io_module.as_ref(py),
-        )?;
+        let source =
+            module.resolve_source(py, state.decode_source.as_ref(), state.io_module.as_any())?;
 
         Ok(if let Some(source) = source {
-            source.into_py(py)
+            source
         } else {
             py.None()
         })
@@ -791,7 +786,7 @@ impl OxidizedFinder {
     ///
     /// If source code is available, then the method should return the path to the
     /// source file, regardless of whether a bytecode was used to load the module.
-    fn get_filename<'p>(slf: &'p PyCell<Self>, fullname: &str) -> PyResult<&'p PyAny> {
+    fn get_filename<'p>(slf: &Bound<Self>, fullname: &str) -> PyResult<Py<PyAny>> {
         let finder = slf.borrow();
         let state = &finder.state;
         let key = fullname.to_string();
@@ -816,7 +811,7 @@ impl OxidizedFinder {
 
     // Support obtaining ResourceReader instances.
 
-    fn get_resource_reader(slf: &PyCell<Self>, fullname: &str) -> PyResult<Py<PyAny>> {
+    fn get_resource_reader(slf: &Bound<Self>, fullname: &str) -> PyResult<Py<PyAny>> {
         let finder = slf.borrow();
         let state = &finder.state;
         let key = fullname.to_string();
@@ -831,11 +826,10 @@ impl OxidizedFinder {
 
         // Resources are only available on packages.
         if entry.is_package {
-            Ok(PyCell::new(
-                slf.py(),
-                OxidizedResourceReader::new(state.clone(), key.to_string()),
-            )?
-            .into_py(slf.py()))
+            Ok(
+                OxidizedResourceReader::new(state.clone(), key.to_string())
+                    .into_py_any(slf.py())?,
+            )
         } else {
             Ok(slf.py().None())
         }
@@ -859,9 +853,9 @@ impl OxidizedFinder {
     /// find_distributions() method.
     #[pyo3(signature=(context=None))]
     fn find_distributions<'p>(
-        slf: &'p PyCell<Self>,
-        context: Option<&PyAny>,
-    ) -> PyResult<&'p PyAny> {
+        slf: &Bound<'p, Self>,
+        context: Option<&Bound<'p, PyAny>>,
+    ) -> PyResult<Bound<'p, PyAny>> {
         let py = slf.py();
         let finder = slf.borrow();
         let state = &finder.state;
@@ -889,7 +883,7 @@ impl OxidizedFinder {
 
     /// def iter_modules(prefix="")
     #[pyo3(signature=(prefix=None))]
-    fn iter_modules<'p>(slf: &'p PyCell<Self>, prefix: Option<&str>) -> PyResult<&'p PyList> {
+    fn iter_modules<'p>(slf: &'p Bound<Self>, prefix: Option<&str>) -> PyResult<Bound<'p, PyList>> {
         let finder = slf.borrow();
         let state = &finder.state;
 
@@ -905,7 +899,7 @@ impl OxidizedFinder {
     /// OxidizedFinder.__new__(relative_path_origin=None))
     #[new]
     #[pyo3(signature=(relative_path_origin=None))]
-    fn new(py: Python, relative_path_origin: Option<&PyAny>) -> PyResult<Self> {
+    fn new(py: Python, relative_path_origin: Option<Bound<PyAny>>) -> PyResult<Self> {
         // We need to obtain an ImporterState instance. This requires handles on a
         // few items...
 
@@ -918,7 +912,7 @@ impl OxidizedFinder {
 
         // Update origin if a value is given.
         if let Some(py_origin) = relative_path_origin {
-            resources_state.set_origin(pyobject_to_pathbuf(py, py_origin)?);
+            resources_state.set_origin(pyobject_to_pathbuf(py_origin)?);
         }
 
         Ok(OxidizedFinder {
@@ -941,21 +935,23 @@ impl OxidizedFinder {
     }
 
     #[getter]
-    fn origin<'p>(&self, py: Python<'p>) -> &'p PyAny {
+    fn origin<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyString>> {
         self.state
             .get_resources_state()
             .origin()
-            .into_py(py)
-            .into_ref(py)
+            .as_os_str()
+            .into_pyobject(py)
+            .map_err(|_| PyTypeError::new_err("Can't convert OsStr to `str`"))
     }
 
     #[getter]
-    fn path_hook_base_str<'p>(&self, py: Python<'p>) -> &'p PyAny {
+    fn path_hook_base_str<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyString>> {
         self.state
             .get_resources_state()
             .current_exe()
-            .into_py(py)
-            .into_ref(py)
+            .as_os_str()
+            .into_pyobject(py)
+            .map_err(|_| PyTypeError::new_err("Can't convert OsStr to `str`"))
     }
 
     #[getter]
@@ -963,7 +959,10 @@ impl OxidizedFinder {
         Ok(self.state.pkg_resources_import_auto_register)
     }
 
-    fn path_hook(slf: &PyCell<Self>, path: &PyAny) -> PyResult<OxidizedPathEntryFinder> {
+    fn path_hook<'p>(
+        slf: &Bound<'p, Self>,
+        path: &Bound<'p, PyAny>,
+    ) -> PyResult<OxidizedPathEntryFinder> {
         Self::path_hook_inner(slf, path).map_err(|inner| {
             let err = PyImportError::new_err("error running OxidizedFinder.path_hook");
 
@@ -980,16 +979,14 @@ impl OxidizedFinder {
         })
     }
 
-    fn index_bytes(&self, py: Python, data: &PyAny) -> PyResult<()> {
-        self.state
-            .get_resources_state_mut()
-            .index_pyobject(py, data)?;
+    fn index_bytes(&self, data: &Bound<PyAny>) -> PyResult<()> {
+        self.state.get_resources_state_mut().index_pyobject(data)?;
 
         Ok(())
     }
 
-    fn index_file_memory_mapped(&self, py: Python, path: &PyAny) -> PyResult<()> {
-        let path = pyobject_to_pathbuf(py, path)?;
+    fn index_file_memory_mapped(&self, path: Bound<PyAny>) -> PyResult<()> {
+        let path = pyobject_to_pathbuf(path)?;
 
         self.state
             .get_resources_state_mut()
@@ -1026,7 +1023,7 @@ impl OxidizedFinder {
         Ok(())
     }
 
-    fn indexed_resources<'p>(&self, py: Python<'p>) -> PyResult<&'p PyList> {
+    fn indexed_resources<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyList>> {
         let resources_state = self.state.get_resources_state();
 
         resources_state.resources_as_py_list(py)
@@ -1042,12 +1039,12 @@ impl OxidizedFinder {
         Ok(())
     }
 
-    fn add_resources(&self, resources: &PyAny) -> PyResult<()> {
+    fn add_resources(&self, resources: &Bound<PyAny>) -> PyResult<()> {
         let resources_state = self.state.get_resources_state_mut();
 
-        for resource in resources.iter()? {
+        for resource in resources.try_iter()? {
             let resource_raw = resource?;
-            let resource = resource_raw.downcast::<PyCell<OxidizedResource>>()?;
+            let resource = resource_raw.downcast::<OxidizedResource>()?;
 
             resources_state
                 .add_resource(pyobject_to_resource(&resource.borrow()))
@@ -1063,7 +1060,7 @@ impl OxidizedFinder {
         py: Python<'p>,
         ignore_builtin: bool,
         ignore_frozen: bool,
-    ) -> PyResult<&'p PyBytes> {
+    ) -> PyResult<Bound<'p, PyBytes>> {
         let resources_state = self.state.get_resources_state();
 
         let data = resources_state
@@ -1075,9 +1072,9 @@ impl OxidizedFinder {
 }
 
 impl OxidizedFinder {
-    fn path_hook_inner(
-        slf: &PyCell<Self>,
-        path_original: &PyAny,
+    fn path_hook_inner<'p>(
+        slf: &Bound<'p, Self>,
+        path_original: &Bound<'p, PyAny>,
     ) -> PyResult<OxidizedPathEntryFinder> {
         let py = slf.py();
         let finder = slf.borrow();
@@ -1101,16 +1098,16 @@ impl OxidizedFinder {
         // Only accept str.
         let path = path_original.downcast::<PyString>()?;
 
-        let path_hook_base = finder.path_hook_base_str(py).downcast::<PyString>()?;
+        let path_hook_base: Bound<PyString> = finder.path_hook_base_str(py)?;
 
-        let target_package = if path.compare(path_hook_base)? == std::cmp::Ordering::Equal {
+        let target_package = if path.compare(&path_hook_base)? == std::cmp::Ordering::Equal {
             None
         } else {
             // Accept both directory separators as prefix match.
-            let unix_prefix = path_hook_base.call_method("__add__", ("/",), None)?;
-            let windows_prefix = path_hook_base.call_method("__add__", ("\\",), None)?;
+            let unix_prefix = &path_hook_base.call_method("__add__", ("/",), None)?;
+            let windows_prefix = &path_hook_base.call_method("__add__", ("\\",), None)?;
 
-            let prefix = PyTuple::new(py, [unix_prefix, windows_prefix]);
+            let prefix = PyTuple::new(py, [unix_prefix, windows_prefix])?;
 
             if !path
                 .call_method("startswith", (prefix,), None)?
@@ -1185,14 +1182,13 @@ impl OxidizedFinder {
         };
 
         Ok(OxidizedPathEntryFinder {
-            finder: PyCell::new(
+            finder: Py::new(
                 py,
                 OxidizedFinder {
                     state: finder.state.clone(),
                 },
-            )?
-            .into(),
-            source_path: path.into_py(py),
+            )?,
+            source_path: path.extract()?,
             target_package,
         })
     }
@@ -1210,17 +1206,17 @@ pub(crate) struct PyOxidizerTraversable {
 #[pymethods]
 impl PyOxidizerTraversable {
     /// Yield Traversable objects in self.
-    fn iterdir(&self) -> PyResult<&PyAny> {
+    fn iterdir(&self) -> PyResult<Py<PyAny>> {
         unimplemented!()
     }
 
     /// Read contents of self as bytes.
-    fn read_bytes(&self) -> PyResult<&PyAny> {
+    fn read_bytes(&self) -> PyResult<Py<PyAny>> {
         unimplemented!()
     }
 
     /// Read contents of self as text.
-    fn read_text(&self) -> PyResult<&PyAny> {
+    fn read_text(&self) -> PyResult<Py<PyAny>> {
         unimplemented!()
     }
 
@@ -1244,19 +1240,19 @@ impl PyOxidizerTraversable {
     }
 
     /// Return True if self is a file.
-    fn is_file(&self) -> PyResult<&PyAny> {
+    fn is_file(&self) -> PyResult<Py<PyAny>> {
         unimplemented!()
     }
 
     /// Return Traversable child in self.
     #[allow(unused)]
-    fn joinpath(&self, child: &PyAny) -> PyResult<&PyAny> {
+    fn joinpath(&self, child: &Bound<PyAny>) -> PyResult<Py<PyAny>> {
         unimplemented!()
     }
 
     /// Return Traversable child in self.
     #[allow(unused)]
-    fn __truediv__(&self, child: &PyAny) -> PyResult<&PyAny> {
+    fn __truediv__(&self, child: &Bound<PyAny>) -> PyResult<Py<PyAny>> {
         unimplemented!()
     }
 
@@ -1267,7 +1263,11 @@ impl PyOxidizerTraversable {
     /// accepted by io.TextIOWrapper.
     #[allow(unused)]
     #[pyo3(signature=(*py_args, **py_kwargs))]
-    fn open(&self, py_args: &PyTuple, py_kwargs: Option<&PyDict>) -> PyResult<&PyAny> {
+    fn open(
+        &self,
+        py_args: &Bound<PyTuple>,
+        py_kwargs: Option<&Bound<PyDict>>,
+    ) -> PyResult<Py<PyAny>> {
         unimplemented!()
     }
 }
@@ -1281,11 +1281,11 @@ impl PyOxidizerTraversable {
 /// completion.
 pub fn replace_meta_path_importers<'a, 'p>(
     py: Python<'p>,
-    oxidized_importer: &PyModule,
+    oxidized_importer: &Bound<'p, PyModule>,
     resources_state: Box<PythonResourcesState<'a, u8>>,
     importer_state_callback: Option<impl FnOnce(&mut ImporterState)>,
-) -> PyResult<&'p PyCell<OxidizedFinder>> {
-    let state = get_module_state(oxidized_importer)?;
+) -> PyResult<Py<OxidizedFinder>> {
+    let state = get_module_state(oxidized_importer.as_unbound())?;
 
     let sys_module = py.import("sys")?;
 
@@ -1293,11 +1293,11 @@ pub fn replace_meta_path_importers<'a, 'p>(
     // importer is able to handle builtin and frozen modules, the existing meta path
     // importers are removed. The assumption here is that we're called very early
     // during startup and the 2 default meta path importers are installed.
-    let oxidized_finder = PyCell::new(
+    let oxidized_finder = Py::new(
         py,
         OxidizedFinder::new_from_module_and_resources(
             py,
-            oxidized_importer,
+            oxidized_importer.clone(),
             resources_state,
             importer_state_callback,
         )?,
@@ -1306,7 +1306,7 @@ pub fn replace_meta_path_importers<'a, 'p>(
     let meta_path_object = sys_module.getattr("meta_path")?;
 
     meta_path_object.call_method0("clear")?;
-    meta_path_object.call_method("append", (oxidized_finder,), None)?;
+    meta_path_object.call_method("append", (&oxidized_finder,), None)?;
 
     state.initialized = true;
 
@@ -1317,7 +1317,7 @@ pub fn replace_meta_path_importers<'a, 'p>(
 ///
 /// This will remove types that aren't defined by this extension from
 /// `sys.meta_path` and `sys.path_hooks`.
-pub fn remove_external_importers(sys_module: &PyModule) -> PyResult<()> {
+pub fn remove_external_importers(sys_module: &Bound<PyModule>) -> PyResult<()> {
     let meta_path = sys_module.getattr("meta_path")?;
     let meta_path = meta_path.downcast::<PyList>()?;
 
@@ -1361,7 +1361,7 @@ pub fn remove_external_importers(sys_module: &PyModule) -> PyResult<()> {
 
         let mut found = false;
         for candidate in oxidized_path_hooks.iter() {
-            if candidate.eq(entry)? {
+            if candidate.eq(&entry)? {
                 found = true;
                 break;
             }
@@ -1382,7 +1382,7 @@ pub fn remove_external_importers(sys_module: &PyModule) -> PyResult<()> {
 ///
 /// [`sys.path_hooks`]: https://docs.python.org/3/library/sys.html#sys.path_hooks
 /// [`sys`]: https://docs.python.org/3/library/sys.html
-pub fn install_path_hook(finder: &PyAny, sys: &PyModule) -> PyResult<()> {
+pub fn install_path_hook(finder: &Bound<PyAny>, sys: &Bound<PyModule>) -> PyResult<()> {
     let hook = finder.getattr("path_hook")?;
     let path_hooks = sys.getattr("path_hooks")?;
     path_hooks

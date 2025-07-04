@@ -36,9 +36,9 @@ fn get_unicode_argument() -> OsString {
     OsString::from_wide(&[20013, 25991])
 }
 
-fn reprs(container: &PyAny) -> PyResult<Vec<String>> {
+fn reprs(container: Bound<PyAny>) -> PyResult<Vec<String>> {
     let mut names = Vec::new();
-    for x in container.iter()? {
+    for x in container.try_iter()? {
         names.push(x?.to_string());
     }
     Ok(names)

@@ -842,7 +842,7 @@ impl StandaloneDistribution {
                             let text = std::fs::read_to_string(&path)
                                 .with_context(|| format!("reading {}", path.display()))?;
                             license.add_license_text(text);
-                        }    
+                        }
                     }
                 }
 

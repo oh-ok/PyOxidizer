@@ -36,10 +36,7 @@ static MODIFIED_DISTUTILS_FILES: Lazy<BTreeMap<&'static str, &'static [u8]>> = L
         include_bytes!("../distutils/unixccompiler.py"),
     );
 
-    res.insert(
-        "sysconfig.py",
-        include_bytes!("../distutils/sysconfig.py"),
-    );
+    res.insert("sysconfig.py", include_bytes!("../distutils/sysconfig.py"));
 
     res
 });
@@ -117,7 +114,10 @@ pub fn prepare_hacked_distutils(
 
     // NOTE: PEP517 enforces build isolation so PYTHONPATH gets unset.
     // .pth files are respected however, so we use that instead.
-    res.insert("PYOXIDIZER_DISTUTILS_PATH".to_string(), python_path.to_string());
+    res.insert(
+        "PYOXIDIZER_DISTUTILS_PATH".to_string(),
+        python_path.to_string(),
+    );
 
     let pyoxidizer_hack_pth = stdlib_path
         .join("site-packages")
@@ -208,7 +208,7 @@ pub fn read_built_extensions(state_dir: &Path) -> Result<Vec<PythonExtensionModu
                 dynamic_library: None,
                 dynamic_filename: None,
                 framework: false,
-                system: true, // experiment: any libraries linked should be all good to add a -l flag to anyway. 
+                system: true, // experiment: any libraries linked should be all good to add a -l flag to anyway.
             })
             .collect();
 

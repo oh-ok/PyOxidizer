@@ -6,7 +6,7 @@ use {
     anyhow::{anyhow, Result},
     once_cell::sync::Lazy,
     pyembed::{MainPythonInterpreter, OxidizedPythonInterpreterConfig, PackedResourcesSource},
-    pyo3::{prelude::*, types::PyBytes},
+    pyo3::{prelude::*, types::PyBytes, IntoPyObjectExt},
     pyoxidizerlib::{
         environment::{default_target_triple, Environment},
         py_packaging::{
@@ -126,7 +126,7 @@ pub fn get_interpreter_and_oxidized_finder<'interpreter, 'resources>(
         let resources_bytes = PyBytes::new(py, packed_resources);
         finder.call_method("index_bytes", (resources_bytes,), None)?;
 
-        let finder = finder.into_py(py);
+        let finder = finder.into_py_any(py)?;
 
         Ok(finder)
     })?;

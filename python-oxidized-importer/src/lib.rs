@@ -46,7 +46,6 @@ use {
         exceptions::{PyImportError, PyValueError},
         ffi as pyffi,
         prelude::*,
-        AsPyPointer, FromPyPointer,
     },
 };
 
@@ -86,7 +85,7 @@ pub(crate) struct ModuleState {
 /// Creates a Python exception on failure.
 ///
 /// Doesn't do type checking that the PyModule is of the appropriate type.
-pub(crate) fn get_module_state(m: &PyModule) -> Result<&mut ModuleState, PyErr> {
+pub(crate) fn get_module_state(m: &Py<PyModule>) -> Result<&mut ModuleState, PyErr> {
     let ptr = m.as_ptr();
     let state = unsafe { pyffi::PyModule_GetState(ptr) as *mut ModuleState };
 
@@ -116,7 +115,7 @@ pub extern "C" fn PyInit_oxidized_importer() -> *mut pyffi::PyObject {
         return module;
     }
 
-    let module = match unsafe { PyModule::from_owned_ptr_or_err(py, module) } {
+    let module: Py<PyModule> = match unsafe { Py::from_owned_ptr_or_err(py, module) } {
         Ok(m) => m,
         Err(e) => {
             e.restore(py);
@@ -124,7 +123,7 @@ pub extern "C" fn PyInit_oxidized_importer() -> *mut pyffi::PyObject {
         }
     };
 
-    match module_init(py, module) {
+    match module_init(py, &module) {
         Ok(()) => module.into_ptr(),
         Err(e) => {
             e.restore(py);
@@ -140,28 +139,31 @@ pub extern "C" fn PyInit_oxidized_importer() -> *mut pyffi::PyObject {
 #[pyfunction]
 pub(crate) fn decode_source<'p>(
     py: Python,
-    io_module: &'p PyModule,
-    source_bytes: &PyAny,
-) -> PyResult<&'p PyAny> {
+    io_module: Py<PyModule>,
+    source_bytes: Py<PyAny>,
+) -> PyResult<Py<PyAny>> {
     // .py based module, so can't be instantiated until importing mechanism
     // is bootstrapped.
     let tokenize_module = py.import("tokenize")?;
 
-    let buffer = io_module.getattr("BytesIO")?.call((source_bytes,), None)?;
-    let readline = buffer.getattr("readline")?;
+    let buffer = io_module
+        .getattr(py, "BytesIO")?
+        .call(py, (&source_bytes,), None)?;
+    let readline = buffer.getattr(py, "readline")?;
     let encoding = tokenize_module
         .getattr("detect_encoding")?
         .call((readline,), None)?;
-    let newline_decoder = io_module
-        .getattr("IncrementalNewlineDecoder")?
-        .call((py.None(), true), None)?;
-    let data = source_bytes.call_method("decode", (encoding.get_item(0)?,), None)?;
-    newline_decoder.call_method("decode", (data,), None)
+    let newline_decoder =
+        io_module
+            .getattr(py, "IncrementalNewlineDecoder")?
+            .call(py, (py.None(), true), None)?;
+    let data = source_bytes.call_method(py, "decode", (encoding.get_item(0)?,), None)?;
+    newline_decoder.call_method(py, "decode", (data,), None)
 }
 
 #[pyfunction]
 fn register_pkg_resources(py: Python) -> PyResult<()> {
-    register_pkg_resources_with_module(py, py.import("pkg_resources")?)
+    register_pkg_resources_with_module(py, &py.import("pkg_resources")?)
 }
 
 /// Initialize the Python module object.
@@ -172,7 +174,7 @@ fn register_pkg_resources(py: Python) -> PyResult<()> {
 /// This receives a handle to the current Python interpreter and just-created
 /// Python module instance. It populates the internal module state and registers
 /// functions on the module object for usage by Python.
-fn module_init(py: Python, m: &PyModule) -> PyResult<()> {
+fn module_init(py: Python, m: &Py<PyModule>) -> PyResult<()> {
     // Enforce minimum Python version requirement.
     //
     // Some features likely work on older Python versions. But we can't
@@ -185,9 +187,10 @@ fn module_init(py: Python, m: &PyModule) -> PyResult<()> {
 
     state.initialized = false;
 
+    let m = m.bind(py);
+
     crate::pkg_resources::init_module(m)?;
     crate::resource_scanning::init_module(m)?;
-
     m.add_function(wrap_pyfunction!(decode_source, m)?)?;
     m.add_function(wrap_pyfunction!(register_pkg_resources, m)?)?;
 
@@ -210,13 +213,13 @@ fn module_init(py: Python, m: &PyModule) -> PyResult<()> {
 }
 
 #[cfg(feature = "zipimport")]
-fn init_zipimport(m: &PyModule) -> PyResult<()> {
+fn init_zipimport(m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<crate::zip_import::OxidizedZipFinder>()?;
 
     Ok(())
 }
 
 #[cfg(not(feature = "zipimport"))]
-fn init_zipimport(_m: &PyModule) -> PyResult<()> {
+fn init_zipimport(_m: &Bound<PyModule>) -> PyResult<()> {
     Ok(())
 }

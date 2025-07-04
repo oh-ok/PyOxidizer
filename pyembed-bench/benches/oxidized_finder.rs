@@ -7,6 +7,7 @@ use {
     criterion::{criterion_group, criterion_main, Criterion},
     pyembed::{MainPythonInterpreter, PythonResourcesState},
     pyembed_bench::*,
+    pyo3::types::PyAnyMethods,
     python_packaging::resource::BytecodeOptimizationLevel,
 };
 
@@ -110,7 +111,7 @@ pub fn bench_oxidized_finder(c: &mut Criterion) {
                 },
                 |(interp, finder)| {
                     interp.with_gil(|py| {
-                        let finder = finder.as_ref(py);
+                        let finder = finder.into_bound(py);
 
                         for name in &names {
                             finder
@@ -134,7 +135,7 @@ pub fn bench_oxidized_finder(c: &mut Criterion) {
                 },
                 |(interp, finder)| {
                     interp.with_gil(|py| {
-                        let finder = finder.as_ref(py);
+                        let finder = finder.into_bound(py);
 
                         for name in &names {
                             finder
@@ -158,7 +159,7 @@ pub fn bench_oxidized_finder(c: &mut Criterion) {
                 },
                 |(interp, finder)| {
                     interp.with_gil(|py| {
-                        let finder = finder.as_ref(py);
+                        let finder = finder.into_bound(py);
 
                         for name in &names {
                             finder

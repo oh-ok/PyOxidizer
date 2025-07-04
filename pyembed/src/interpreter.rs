@@ -19,8 +19,11 @@ use {
         OXIDIZED_IMPORTER_NAME_STR,
     },
     pyo3::{
-        exceptions::PyRuntimeError, ffi as pyffi, prelude::*, types::PyDict, AsPyPointer,
-        PyTypeInfo,
+        exceptions::PyRuntimeError,
+        ffi as pyffi,
+        prelude::*,
+        types::{PyBool, PyDict},
+        IntoPyObjectExt, PyTypeInfo,
     },
     python_packaging::interpreter::{MultiprocessingStartMethod, TerminfoResolution},
     std::{
@@ -306,7 +309,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         // there should no longer be a Python interpreter around. So it follows that the
         // importer state cannot be dropped after self.
 
-        replace_meta_path_importers(py, oxidized_importer, resources_state, Some(cb)).map_err(
+        replace_meta_path_importers(py, &oxidized_importer, resources_state, Some(cb)).map_err(
             |err| {
                 NewInterpreterError::new_from_pyerr(py, err, "initialization of oxidized importer")
             },
@@ -351,12 +354,12 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         // _Py_InitializeMain.
 
         if !self.config.filesystem_importer {
-            remove_external_importers(sys_module).map_err(|err| {
+            remove_external_importers(&sys_module).map_err(|err| {
                 NewInterpreterError::new_from_pyerr(py, err, "removing external importers")
             })?;
         }
 
-        // We aren't able to hold a &PyAny to OxidizedFinder through multi-phase interpreter
+        // We aren't able to hold a Py<PyAny> to OxidizedFinder through multi-phase interpreter
         // initialization. So recover an instance now if it is available.
         let oxidized_finder = if oxidized_finder_loaded {
             sys_module
@@ -364,7 +367,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
                 .map_err(|err| {
                     NewInterpreterError::new_from_pyerr(py, err, "obtaining sys.meta_path")
                 })?
-                .iter()
+                .try_iter()
                 .map_err(|err| {
                     NewInterpreterError::new_from_pyerr(
                         py,
@@ -385,7 +388,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         };
 
         if let Some(Ok(finder)) = oxidized_finder {
-            install_path_hook(finder, sys_module).map_err(|err| {
+            install_path_hook(&finder, &sys_module).map_err(|err| {
                 NewInterpreterError::new_from_pyerr(
                     py,
                     err,
@@ -402,7 +405,9 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
                 .map(|x| osstring_to_bytes(py, x.clone()))
                 .collect::<Vec<_>>();
 
-            let args = args_objs.to_object(py);
+            let args = args_objs
+                .into_pyobject(py)
+                .map_err(|err| NewInterpreterError::new_from_pyerr(py, err, "creating sys.argv"))?;
             let argvb = b"argvb\0";
 
             let res =
@@ -417,7 +422,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         // As a convention, sys.oxidized is set to indicate we are running from
         // a self-contained application.
         let oxidized = b"oxidized\0";
-        let py_true = true.into_py(py);
+        let py_true = PyBool::new(py, true);
 
         let res =
             unsafe { pyffi::PySys_SetObject(oxidized.as_ptr() as *const c_char, py_true.as_ptr()) };
@@ -440,7 +445,13 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
 
         if self.config.sys_meipass {
             let meipass = b"_MEIPASS\0";
-            let value = self.config.origin().display().to_string().to_object(py);
+            let value = self
+                .config
+                .origin()
+                .display()
+                .to_string()
+                .into_pyobject(py)
+                .unwrap();
 
             match unsafe {
                 pyffi::PySys_SetObject(meipass.as_ptr() as *const c_char, value.as_ptr())
@@ -566,7 +577,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
                         ))
                     })?;
 
-                    v.into_py(py)
+                    v.into_py_any(py).unwrap()
                 };
 
                 kwargs.set_item(key, value)?;

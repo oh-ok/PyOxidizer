@@ -349,6 +349,7 @@ impl<'a> EmbeddedPythonContext<'a> {
             // We define linking info via explicit build script lines.
             lib_name: None,
             lib_dir: None,
+            python_framework_prefix: None,
             executable: Some(self.python_exe_host.to_string_lossy().to_string()),
             // TODO set from Python distribution metadata.
             pointer_width: Some(if self.target_triple.starts_with("i686-") {

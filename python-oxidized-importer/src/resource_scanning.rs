@@ -12,7 +12,7 @@ use {
             PythonPackageDistributionResource, PythonPackageResource,
         },
     },
-    pyo3::{exceptions::PyValueError, prelude::*, types::PyList},
+    pyo3::{exceptions::PyValueError, prelude::*, types::PyList, *},
     python_packaging::{
         filesystem_scanning::find_python_resources, module_util::PythonModuleSuffixes,
         resource::PythonResource,
@@ -21,8 +21,11 @@ use {
 
 /// Scans a filesystem path for Python resources and turns them into Python types.
 #[pyfunction]
-pub(crate) fn find_resources_in_path<'p>(py: Python<'p>, path: &PyAny) -> PyResult<&'p PyList> {
-    let path = pyobject_to_pathbuf(py, path)?;
+pub(crate) fn find_resources_in_path<'p>(
+    py: Python<'p>,
+    path: Bound<'p, PyAny>,
+) -> PyResult<Bound<'p, PyList>> {
+    let path = pyobject_to_pathbuf(path)?;
 
     if !path.is_dir() {
         return Err(PyValueError::new_err(format!(
@@ -72,19 +75,31 @@ pub(crate) fn find_resources_in_path<'p>(py: Python<'p>, path: &PyAny) -> PyResu
 
         match resource {
             PythonResource::ModuleSource(source) => {
-                res.push(PythonModuleSource::new(py, source.into_owned())?.to_object(py));
+                res.push(
+                    PythonModuleSource::new(source.into_owned()).and_then(|o| o.into_py_any(py))?,
+                );
             }
             PythonResource::ModuleBytecode(bytecode) => {
-                res.push(PythonModuleBytecode::new(py, bytecode.into_owned())?.to_object(py));
+                res.push(
+                    PythonModuleBytecode::new(bytecode.into_owned())
+                        .and_then(|o| o.into_py_any(py))?,
+                );
             }
             PythonResource::ExtensionModule(extension) => {
-                res.push(PythonExtensionModule::new(py, extension.into_owned())?.to_object(py));
+                res.push(
+                    PythonExtensionModule::new(extension.into_owned())
+                        .and_then(|o| o.into_py_any(py))?,
+                );
             }
             PythonResource::PackageResource(resource) => {
-                res.push(PythonPackageResource::new(py, resource.into_owned())?.to_object(py));
+                res.push(
+                    PythonPackageResource::new(resource.into_owned())
+                        .and_then(|o| o.into_py_any(py))?,
+                );
             }
             PythonResource::PackageDistributionResource(resource) => res.push(
-                PythonPackageDistributionResource::new(py, resource.into_owned())?.to_object(py),
+                PythonPackageDistributionResource::new(resource.into_owned())
+                    .and_then(|o| o.into_py_any(py))?,
             ),
             PythonResource::ModuleBytecodeRequest(_) => {}
             PythonResource::EggFile(_) => {}
@@ -93,11 +108,9 @@ pub(crate) fn find_resources_in_path<'p>(py: Python<'p>, path: &PyAny) -> PyResu
         }
     }
 
-    Ok(PyList::new(py, &res))
+    Ok(PyList::new(py, &res)?)
 }
 
-pub(crate) fn init_module(m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(find_resources_in_path, m)?)?;
-
-    Ok(())
+pub(crate) fn init_module(m: &Bound<PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(find_resources_in_path, m)?)
 }

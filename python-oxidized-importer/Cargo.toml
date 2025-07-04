@@ -47,7 +47,7 @@ path = "../python-packaging"
 default-features = false
 
 [dependencies.pyo3]
-version = "0.18.3"
+version = "0.25.1"
 features = ["macros"]
 
 [dependencies.zip]
@@ -72,4 +72,4 @@ extension-module = ["pyo3/extension-module"]
 zipimport = ["zip"]
 
 [build-dependencies]
-pyo3-build-config = { version = "0.18.3", features = ["resolve-config"] }
+pyo3-build-config = { version = "0.25.1", features = ["resolve-config"] }
