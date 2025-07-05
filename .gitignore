@@ -11,4 +11,5 @@ target/
 tugger/docs/_build/
 venv/
 wheelhouse/
+pyoxidizer/build/
 

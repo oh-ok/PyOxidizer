@@ -320,12 +320,10 @@ mod tests {
     }
 
     #[test]
-    // Python 3.8 not supported on aarch64.
-    #[cfg(not(target_arch = "aarch64"))]
-    fn test_add_python_executable_38() -> Result<()> {
+    fn test_add_python_executable_310() -> Result<()> {
         let mut env = test_evaluation_context_builder()?.into_context()?;
 
-        env.eval("dist = default_python_distribution(python_version='3.8')")?;
+        env.eval("dist = default_python_distribution(python_version='3.10')")?;
         env.eval("exe = dist.to_python_executable('testapp')")?;
 
         let m = FileManifestValue::new_from_args().unwrap();
@@ -337,10 +335,10 @@ mod tests {
     }
 
     #[test]
-    fn test_add_python_executable_310() -> Result<()> {
+    fn test_add_python_executable_311() -> Result<()> {
         let mut env = test_evaluation_context_builder()?.into_context()?;
 
-        env.eval("dist = default_python_distribution(python_version='3.10')")?;
+        env.eval("dist = default_python_distribution(python_version='3.11')")?;
         env.eval("exe = dist.to_python_executable('testapp')")?;
 
         let m = FileManifestValue::new_from_args().unwrap();

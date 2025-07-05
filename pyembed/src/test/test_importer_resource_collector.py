@@ -20,6 +20,9 @@ from oxidized_importer import (
     find_resources_in_path,
 )
 
+# Ensure that the .pyc file exists for ``test_urllib()``
+import urllib.request  # noqa
+
 
 @contextmanager
 def assert_tempfile_cleaned_up(TemporaryDirectory=tempfile.TemporaryDirectory):

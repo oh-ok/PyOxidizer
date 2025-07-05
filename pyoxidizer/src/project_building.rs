@@ -717,13 +717,11 @@ mod tests {
         Ok(())
     }
 
-    // Skip on aarch64-apple-darwin because we don't have 3.8 builds.
-    #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
     #[test]
-    fn test_empty_project_python_38() -> Result<()> {
+    fn test_empty_project_python_310() -> Result<()> {
         let env = get_env()?;
         let options = StandalonePythonExecutableBuilderOptions {
-            distribution_version: Some("3.8".to_string()),
+            distribution_version: Some("3.10".to_string()),
             ..Default::default()
         };
         let pre_built = options.new_builder()?;
@@ -741,10 +739,10 @@ mod tests {
     }
 
     #[test]
-    fn test_empty_project_python_310() -> Result<()> {
+    fn test_empty_project_python_311() -> Result<()> {
         let env = get_env()?;
         let options = StandalonePythonExecutableBuilderOptions {
-            distribution_version: Some("3.10".to_string()),
+            distribution_version: Some("3.11".to_string()),
             ..Default::default()
         };
         let pre_built = options.new_builder()?;
@@ -804,10 +802,10 @@ mod tests {
 
     #[test]
     #[cfg(target_env = "msvc")]
-    fn test_empty_project_standalone_static_38() -> Result<()> {
+    fn test_empty_project_standalone_static_310() -> Result<()> {
         let env = get_env()?;
         let options = StandalonePythonExecutableBuilderOptions {
-            distribution_version: Some("3.8".to_string()),
+            distribution_version: Some("3.10".to_string()),
             distribution_flavor: DistributionFlavor::StandaloneStatic,
             ..Default::default()
         };
@@ -827,10 +825,10 @@ mod tests {
 
     #[test]
     #[cfg(target_env = "msvc")]
-    fn test_empty_project_standalone_static_310() -> Result<()> {
+    fn test_empty_project_standalone_static_311() -> Result<()> {
         let env = get_env()?;
         let options = StandalonePythonExecutableBuilderOptions {
-            distribution_version: Some("3.10".to_string()),
+            distribution_version: Some("3.11".to_string()),
             distribution_flavor: DistributionFlavor::StandaloneStatic,
             ..Default::default()
         };

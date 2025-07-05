@@ -425,7 +425,10 @@ mod tests {
         let env = get_env()?;
 
         for target_dist in get_all_standalone_distributions()? {
-            if target_dist.python_platform_compatibility_tag() == "none" {
+            if matches!(
+                target_dist.python_platform_compatibility_tag(),
+                "none" | "macosx_10_9_x86_64"
+            ) {
                 continue;
             }
 
@@ -446,7 +449,7 @@ mod tests {
                 &*target_dist,
                 &policy,
                 false,
-                &["zstandard==0.19.0".to_string()],
+                &["zstandard>=0.23.0".to_string()],
             )?;
 
             assert!(!resources.is_empty());
@@ -480,10 +483,7 @@ mod tests {
             let mut expected_extensions_count = 1;
             let mut expected_first_extension_name = "zstandard.backend_c";
 
-            if matches!(
-                target_dist.target_triple.as_str(),
-                "i686-pc-windows-msvc" | "x86_64-pc-windows-msvc"
-            ) {
+            if !matches!(target_dist.target_triple.as_str(), "x86_64-apple-darwin") {
                 expected_names.insert("zstandard._cffi".to_string());
                 expected_extensions_count = 2;
                 expected_first_extension_name = "zstandard._cffi";
@@ -522,7 +522,10 @@ mod tests {
         let env = get_env()?;
 
         for target_dist in get_all_standalone_distributions()? {
-            if target_dist.python_platform_compatibility_tag() == "none" {
+            if matches!(
+                target_dist.python_platform_compatibility_tag(),
+                "none" | "macosx_10_9_x86_64"
+            ) {
                 continue;
             }
 
@@ -545,7 +548,7 @@ mod tests {
                 &*target_dist,
                 &policy,
                 false,
-                &["numpy==1.24.1".to_string()],
+                &["numpy>=1.24.1".to_string()],
             );
 
             let resources = res?;

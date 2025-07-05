@@ -80,6 +80,7 @@ pub static BROKEN_EXTENSIONS_MACOS: Lazy<Vec<String>> = Lazy::new(|| {
         "curses".to_string(),
         "_curses_panel".to_string(),
         "readline".to_string(),
+        "_crypt".to_string(),
     ]
 });
 
@@ -1544,13 +1545,9 @@ pub mod tests {
             // 3.10 distributions stopped shipping GPL licensed extensions.
             let (linux_dropped, linux_added) =
                 if ["3.8", "3.9"].contains(&dist.python_major_minor_version().as_str()) {
-                    (
-                        vec![
-                            ("_gdbm".to_string(), Some("default".to_string())),
-                            ("readline".to_string(), Some("default".to_string())),
-                        ],
-                        vec![("readline".to_string(), Some("libedit".to_string()))],
-                    )
+                    // _gdbm is no longer built by PBS and _readline links to libedit
+                    // https://github.com/astral-sh/python-build-standalone/releases/tag/20230116
+                    (vec![], vec![])
                 } else {
                     (vec![], vec![])
                 };
