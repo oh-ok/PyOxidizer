@@ -536,7 +536,7 @@ pub struct StandaloneDistribution {
     config_vars: HashMap<String, String>,
 
     // Build options (or optimizations for PBS v7).
-    pub build_options: Option<String>,
+    pub build_options: Vec<String>,
 }
 
 impl StandaloneDistribution {
@@ -995,6 +995,17 @@ impl StandaloneDistribution {
 
         let inittab_object = python_path.join(pi.build_info.inittab_object);
 
+        let build_options =
+            pi.build_options
+                .or(pi.optimizations)
+                .map_or_else(Vec::new, |options| {
+                    if options.len() == 0 {
+                        Vec::new()
+                    } else {
+                        Vec::from_iter(options.split("+").map(<_>::to_string))
+                    }
+                });
+
         Ok(Self {
             base_dir: dist_dir.to_path_buf(),
             target_triple: pi.target_triple,
@@ -1034,7 +1045,7 @@ impl StandaloneDistribution {
             module_suffixes,
             crt_features: pi.crt_features,
             config_vars: pi.python_config_vars,
-            build_options: pi.build_options.or(pi.optimizations),
+            build_options: build_options,
         })
     }
 

@@ -296,12 +296,14 @@ impl StandalonePythonExecutableBuilder {
                 .add_component(component.clone());
         }
 
-        if let Some(build_options) = &self.target_distribution.build_options {
-            if build_options.split("+").contains(&"lto") {
-                self.core_build_context
-                    .build_options
-                    .insert("lto".to_string());
-            }
+        if self
+            .target_distribution
+            .build_options
+            .contains(&"lto".to_string())
+        {
+            self.core_build_context
+                .build_options
+                .insert("lto".to_string());
         }
 
         Ok(())
@@ -455,6 +457,26 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
             .iter()
             .find(|s| s.starts_with("vcruntime:"))
             .map(|s| (s.split(':').nth(1).unwrap()[0..2].to_string(), platform))
+    }
+
+    fn rustc_args(&self) -> Vec<String> {
+        let mut flags = vec![];
+        if self
+            .target_distribution
+            .build_options
+            .contains(&"lto".to_string())
+        {
+            // In future, we would use the bundled `rust-lld` for this, but since that's
+            // not stable yet, we have to hope that the user has a compatible version
+            // of `lld` installed.
+            if self.host_triple.split("-").contains(&"windows") {
+                flags.push("-Clinker=lld-link".to_string());
+            } else {
+                flags.push("-Clink-args=-fuse-ld=lld".to_string());
+            }
+        }
+
+        flags
     }
 
     fn cache_tag(&self) -> &str {

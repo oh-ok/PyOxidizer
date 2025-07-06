@@ -309,12 +309,6 @@ pub fn link_libpython(
         linking_annotations.push(LinkingAnnotation::LinkLibraryStatic(lib.to_string()));
     }
 
-    // PBS uses LLVM's thin LTO, which requires that you have a compatible version of lld installed
-
-    if context.build_options.contains("lto") {
-        linking_annotations.push(LinkingAnnotation::Argument("-fuse-ld=lld".to_string()));
-    }
-
     // Python 3.9+ on macOS uses __builtin_available(), which requires
     // ___isOSVersionAtLeast(), which is part of libclang_rt. However,
     // libclang_rt isn't linked by default by Rust. So unless something else

@@ -97,6 +97,7 @@ impl BuildEnvironment {
         pyo3_config_path: impl AsRef<Path>,
         libpython_link_mode: LibpythonLinkMode,
         apple_sdk_info: Option<&AppleSdkInfo>,
+        rustc_args: Vec<String>,
     ) -> Result<Self> {
         let rust_environment = env
             .ensure_rust_toolchain(Some(target_triple))
@@ -163,7 +164,7 @@ impl BuildEnvironment {
             }
         }
 
-        let mut rust_flags = vec![];
+        let mut rust_flags = rustc_args.clone();
 
         // Windows standalone_static distributions require the non-DLL CRT.
         // This requires telling Rust to use the static CRT.
@@ -294,6 +295,7 @@ pub fn build_executable_with_rust_project<'a>(
         embedded_data.pyo3_config_path(artifacts_path),
         exe.libpython_link_mode(),
         exe.apple_sdk_info(),
+        exe.rustc_args(),
     )
     .context("resolving build environment")?;
 
