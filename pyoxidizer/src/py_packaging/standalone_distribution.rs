@@ -205,7 +205,7 @@ struct PythonBuildInfo {
 struct PythonJsonMain {
     version: String,
     target_triple: String,
-    optimizations: String,
+    optimizations: Option<String>,
     python_tag: String,
     python_abi_tag: Option<String>,
     python_config_vars: HashMap<String, String>,
@@ -236,6 +236,7 @@ struct PythonJsonMain {
     license_path: Option<String>,
     tcl_library_path: Option<String>,
     tcl_library_paths: Option<Vec<String>>,
+    build_options: Option<String>,
 }
 
 fn parse_python_json(path: &Path) -> Result<PythonJsonMain> {
@@ -533,6 +534,9 @@ pub struct StandaloneDistribution {
 
     /// Configuration variables used by Python.
     config_vars: HashMap<String, String>,
+
+    // Build options (or optimizations for PBS v7).
+    pub build_options: Option<String>,
 }
 
 impl StandaloneDistribution {
@@ -1030,6 +1034,7 @@ impl StandaloneDistribution {
             module_suffixes,
             crt_features: pi.crt_features,
             config_vars: pi.python_config_vars,
+            build_options: pi.build_options.or(pi.optimizations),
         })
     }
 

@@ -59,6 +59,9 @@ pub struct LibPythonBuildContext {
 
     /// Holds licensing info for things being linked together.
     pub licensed_components: LicensedComponents,
+
+    // Any config options specified in the build (previously optimizations in PBS)
+    pub build_options: BTreeSet<String>,
 }
 
 impl LibPythonBuildContext {
@@ -74,6 +77,7 @@ impl LibPythonBuildContext {
         let mut frameworks = BTreeSet::new();
         let mut init_functions = BTreeMap::new();
         let mut licensed_components = LicensedComponents::default();
+        let mut build_options = BTreeSet::new();
 
         for context in contexts {
             // Last write wins.
@@ -107,6 +111,9 @@ impl LibPythonBuildContext {
             for c in context.licensed_components.iter_components() {
                 licensed_components.add_component(c.clone());
             }
+            for o in &context.build_options {
+                build_options.insert(o.clone());
+            }
         }
 
         Self {
@@ -120,6 +127,7 @@ impl LibPythonBuildContext {
             frameworks,
             init_functions,
             licensed_components,
+            build_options,
         }
     }
 }

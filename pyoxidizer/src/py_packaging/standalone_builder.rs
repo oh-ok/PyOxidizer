@@ -23,6 +23,7 @@ use {
     },
     crate::environment::Environment,
     anyhow::{anyhow, Context, Result},
+    itertools::Itertools,
     log::warn,
     once_cell::sync::Lazy,
     pyo3_build_config::{BuildFlag, BuildFlags, PythonImplementation, PythonVersion},
@@ -293,6 +294,14 @@ impl StandalonePythonExecutableBuilder {
             self.core_build_context
                 .licensed_components
                 .add_component(component.clone());
+        }
+
+        if let Some(build_options) = &self.target_distribution.build_options {
+            if build_options.split("+").contains(&"lto") {
+                self.core_build_context
+                    .build_options
+                    .insert("lto".to_string());
+            }
         }
 
         Ok(())
