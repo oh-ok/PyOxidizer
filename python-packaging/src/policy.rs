@@ -453,6 +453,13 @@ impl PythonPackagingPolicy {
                     self.include_non_distribution_sources
                 }
             }
+            PythonResource::PackageResource(ref resource) => {
+                if resource.is_stdlib {
+                    self.include_distribution_resources
+                } else {
+                    self.include_non_distribution_sources
+                }
+            }
             _ => false,
         };
 

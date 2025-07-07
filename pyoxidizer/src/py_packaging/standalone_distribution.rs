@@ -220,6 +220,7 @@ struct PythonJsonMain {
     python_paths_abstract: HashMap<String, String>,
     python_exe: String,
     python_stdlib_test_packages: Vec<String>,
+    python_stdlib_platform_config: Option<String>,
     python_suffixes: HashMap<String, Vec<String>>,
     python_bytecode_magic_number: String,
     python_symbol_visibility: String,
@@ -443,6 +444,9 @@ pub struct StandaloneDistribution {
 
     /// Python packages in the standard library providing tests.
     stdlib_test_packages: Vec<String>,
+
+    // Path to <stdlib>/config-X.Y-PLAT.
+    stdlib_platform_config: PathBuf,
 
     /// How libpython is linked in this distribution.
     link_mode: StandaloneDistributionLinkMode,
@@ -1006,6 +1010,11 @@ impl StandaloneDistribution {
                     }
                 });
 
+        let stdlib_plat_config = match pi.python_stdlib_platform_config {
+            Some(plat_config_dir) => plat_config_dir.into(),
+            None => stdlib_path.join(format!("config-{}", pi.python_major_minor_version)),
+        };
+
         Ok(Self {
             base_dir: dist_dir.to_path_buf(),
             target_triple: pi.target_triple,
@@ -1017,6 +1026,7 @@ impl StandaloneDistribution {
             python_exe: python_exe_path(dist_dir)?,
             stdlib_path,
             stdlib_test_packages: pi.python_stdlib_test_packages,
+            stdlib_platform_config: stdlib_plat_config,
             link_mode,
             python_symbol_visibility: pi.python_symbol_visibility,
             extension_module_loading: pi.python_extension_module_loading,
@@ -1081,6 +1091,13 @@ impl StandaloneDistribution {
     pub fn is_extension_module_file_loadable(&self) -> bool {
         self.extension_module_loading
             .contains(&"shared-library".to_string())
+    }
+    fn is_stdlib_platform_config(&self, path: &PathBuf) -> bool {
+        path.starts_with(
+            self.base_dir
+                .join("python")
+                .join(&self.stdlib_platform_config),
+        )
     }
 }
 
@@ -1312,27 +1329,34 @@ impl PythonDistribution for StandaloneDistribution {
             .iter()
             .flat_map(|(_, exts)| exts.iter().map(|e| PythonResource::from(e.to_owned())));
 
-        let module_sources = self.py_modules.iter().map(|(name, path)| {
-            PythonResource::from(PythonModuleSource {
-                name: name.clone(),
-                source: FileData::Path(path.clone()),
-                is_package: is_package_from_path(path),
-                cache_tag: self.cache_tag.clone(),
-                is_stdlib: true,
-                is_test: self.is_stdlib_test_package(name),
-            })
-        });
+        let module_sources = self
+            .py_modules
+            .iter()
+            .filter(|(_, path)| self.is_stdlib_platform_config(path))
+            .map(|(name, path)| {
+                PythonResource::from(PythonModuleSource {
+                    name: name.clone(),
+                    source: FileData::Path(path.clone()),
+                    is_package: is_package_from_path(path),
+                    cache_tag: self.cache_tag.clone(),
+                    is_stdlib: true,
+                    is_test: self.is_stdlib_test_package(name),
+                })
+            });
 
         let resource_datas = self.resources.iter().flat_map(|(package, inner)| {
-            inner.iter().map(move |(name, path)| {
-                PythonResource::from(PythonPackageResource {
-                    leaf_package: package.clone(),
-                    relative_name: name.clone(),
-                    data: FileData::Path(path.clone()),
-                    is_stdlib: true,
-                    is_test: self.is_stdlib_test_package(package),
+            inner
+                .iter()
+                .filter(|(_, path)| self.is_stdlib_platform_config(path))
+                .map(move |(name, path)| {
+                    PythonResource::from(PythonPackageResource {
+                        leaf_package: package.clone(),
+                        relative_name: name.clone(),
+                        data: FileData::Path(path.clone()),
+                        is_stdlib: true,
+                        is_test: self.is_stdlib_test_package(package),
+                    })
                 })
-            })
         });
 
         extension_modules
