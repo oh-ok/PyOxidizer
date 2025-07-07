@@ -1332,7 +1332,7 @@ impl PythonDistribution for StandaloneDistribution {
         let module_sources = self
             .py_modules
             .iter()
-            .filter(|(_, path)| self.is_stdlib_platform_config(path))
+            .filter(|(_, path)| !self.is_stdlib_platform_config(path))
             .map(|(name, path)| {
                 PythonResource::from(PythonModuleSource {
                     name: name.clone(),
@@ -1347,7 +1347,7 @@ impl PythonDistribution for StandaloneDistribution {
         let resource_datas = self.resources.iter().flat_map(|(package, inner)| {
             inner
                 .iter()
-                .filter(|(_, path)| self.is_stdlib_platform_config(path))
+                .filter(|(_, path)| !self.is_stdlib_platform_config(path))
                 .map(move |(name, path)| {
                     PythonResource::from(PythonPackageResource {
                         leaf_package: package.clone(),
