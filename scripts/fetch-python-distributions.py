@@ -39,7 +39,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--api-token", help="GitHub API token", required=True)
     parser.add_argument(
-        "--tag", help="python-build-standalone release tag", default="20241206"
+        "--tag", help="python-build-standalone release tag", default="20250212"
     )
 
     args = parser.parse_args()
@@ -115,25 +115,25 @@ def main():
     lines = [
         "// Linux glibc linked.",
         format_record(records["3.9-aarch64-unknown-linux-gnu-noopt"]),
-        format_record(records["3.9-x86_64-unknown-linux-gnu-pgo"]),
-        format_record(records["3.9-x86_64_v2-unknown-linux-gnu-pgo"]),
-        format_record(records["3.9-x86_64_v3-unknown-linux-gnu-pgo"]),
+        format_record(records["3.9-x86_64-unknown-linux-gnu-pgo+lto"]),
+        format_record(records["3.9-x86_64_v2-unknown-linux-gnu-pgo+lto"]),
+        format_record(records["3.9-x86_64_v3-unknown-linux-gnu-pgo+lto"]),
         format_record(records["3.10-aarch64-unknown-linux-gnu-noopt"]),
-        format_record(records["3.10-x86_64-unknown-linux-gnu-pgo"]),
-        format_record(records["3.10-x86_64_v2-unknown-linux-gnu-pgo"]),
-        format_record(records["3.10-x86_64_v3-unknown-linux-gnu-pgo"]),
+        format_record(records["3.10-x86_64-unknown-linux-gnu-pgo+lto"]),
+        format_record(records["3.10-x86_64_v2-unknown-linux-gnu-pgo+lto"]),
+        format_record(records["3.10-x86_64_v3-unknown-linux-gnu-pgo+lto"]),
         format_record(records["3.11-aarch64-unknown-linux-gnu-noopt"]),
-        format_record(records["3.11-x86_64-unknown-linux-gnu-pgo"]),
-        format_record(records["3.11-x86_64_v2-unknown-linux-gnu-pgo"]),
-        format_record(records["3.11-x86_64_v3-unknown-linux-gnu-pgo"]),
+        format_record(records["3.11-x86_64-unknown-linux-gnu-pgo+lto"]),
+        format_record(records["3.11-x86_64_v2-unknown-linux-gnu-pgo+lto"]),
+        format_record(records["3.11-x86_64_v3-unknown-linux-gnu-pgo+lto"]),
         format_record(records["3.12-aarch64-unknown-linux-gnu-noopt"]),
-        format_record(records["3.12-x86_64-unknown-linux-gnu-pgo"]),
-        format_record(records["3.12-x86_64_v2-unknown-linux-gnu-pgo"]),
-        format_record(records["3.12-x86_64_v3-unknown-linux-gnu-pgo"]),
+        format_record(records["3.12-x86_64-unknown-linux-gnu-pgo+lto"]),
+        format_record(records["3.12-x86_64_v2-unknown-linux-gnu-pgo+lto"]),
+        format_record(records["3.12-x86_64_v3-unknown-linux-gnu-pgo+lto"]),
         format_record(records["3.13-aarch64-unknown-linux-gnu-noopt"]),
-        format_record(records["3.13-x86_64-unknown-linux-gnu-pgo"]),
-        format_record(records["3.13-x86_64_v2-unknown-linux-gnu-pgo"]),
-        format_record(records["3.13-x86_64_v3-unknown-linux-gnu-pgo"]),
+        format_record(records["3.13-x86_64-unknown-linux-gnu-pgo+lto"]),
+        format_record(records["3.13-x86_64_v2-unknown-linux-gnu-pgo+lto"]),
+        format_record(records["3.13-x86_64_v3-unknown-linux-gnu-pgo+lto"]),
         "",
         "// Linux musl.",
         format_record(records["3.9-x86_64-unknown-linux-musl-noopt"]),
@@ -175,16 +175,16 @@ def main():
         "// DEPRECATED",
         "",
         "// macOS.",
-        format_record(records["3.9-aarch64-apple-darwin-pgo"]),
-        format_record(records["3.10-aarch64-apple-darwin-pgo"]),
-        format_record(records["3.11-aarch64-apple-darwin-pgo"]),
-        format_record(records["3.12-aarch64-apple-darwin-pgo"]),
-        format_record(records["3.13-aarch64-apple-darwin-pgo"]),
-        format_record(records["3.9-x86_64-apple-darwin-pgo"]),
-        format_record(records["3.10-x86_64-apple-darwin-pgo"]),
-        format_record(records["3.11-x86_64-apple-darwin-pgo"]),
-        format_record(records["3.12-x86_64-apple-darwin-pgo"]),
-        format_record(records["3.13-x86_64-apple-darwin-pgo"]),
+        format_record(records["3.9-aarch64-apple-darwin-pgo+lto"]),
+        format_record(records["3.10-aarch64-apple-darwin-pgo+lto"]),
+        format_record(records["3.11-aarch64-apple-darwin-pgo+lto"]),
+        format_record(records["3.12-aarch64-apple-darwin-pgo+lto"]),
+        format_record(records["3.13-aarch64-apple-darwin-pgo+lto"]),
+        format_record(records["3.9-x86_64-apple-darwin-pgo+lto"]),
+        format_record(records["3.10-x86_64-apple-darwin-pgo+lto"]),
+        format_record(records["3.11-x86_64-apple-darwin-pgo+lto"]),
+        format_record(records["3.12-x86_64-apple-darwin-pgo+lto"]),
+        format_record(records["3.13-x86_64-apple-darwin-pgo+lto"]),
     ]
 
     for line in "\n".join(lines).splitlines(False):
