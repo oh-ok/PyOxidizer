@@ -193,7 +193,7 @@ impl BuildEnvironment {
 
             envs.insert(
                 "RUSTFLAGS".to_string(),
-                if let Some(value) = envs.get("RUSTFLAGS") {
+                if let Ok(value) = std::env::var("RUSTFLAGS") {
                     format!("{} {}", extra_flags, value)
                 } else {
                     extra_flags
