@@ -12,4 +12,5 @@ tugger/docs/_build/
 venv/
 wheelhouse/
 pyoxidizer/build/
+pyoxy/build/
 
