@@ -3,6 +3,7 @@
 
 BUILD_PATH = VARS.get("BUILD_PATH", CWD + "/build")
 PYTHON_VERSION = VARS.get("PYTHON_VERSION", "3.9")
+BLACKLIST = VARS.get("BLACKLIST_MODULES", "venv,pip").split(",")
 
 set_build_path(BUILD_PATH)
 
@@ -13,14 +14,19 @@ def make_resources():
     policy = dist.make_python_packaging_policy()
 
     policy.extension_module_filter = "all"
-    policy.include_distribution_sources = True
-    policy.include_distribution_resources = True
+    policy.include_distribution_sources = False
+    policy.include_distribution_resources = False
     policy.resources_location = "in-memory"
 
     exe = dist.to_python_executable(
         name="pyoxy",
         packaging_policy=policy,
     )
+
+    for r in dist.python_resources():
+        if getattr(r, "package", r.name).split(".")[0] in BLACKLIST:
+            continue
+        exe.add_python_resource(r)
 
     exe.add_cargo_manifest_licensing(CWD + "/Cargo.toml")
 
