@@ -3,7 +3,7 @@
 
 BUILD_PATH = VARS.get("BUILD_PATH", CWD + "/build")
 PYTHON_VERSION = VARS.get("PYTHON_VERSION", "3.9")
-BLACKLIST = VARS.get("BLACKLIST_MODULES", "venv,pip").split(",")
+BLACKLIST = VARS.get("BLACKLIST_MODULES", "venv,pip,test").split(",")
 
 set_build_path(BUILD_PATH)
 
@@ -26,6 +26,7 @@ def make_resources():
     for r in dist.python_resources():
         if getattr(r, "package", r.name).split(".")[0] in BLACKLIST:
             continue
+        r.add_include = True
         exe.add_python_resource(r)
 
     exe.add_cargo_manifest_licensing(CWD + "/Cargo.toml")
