@@ -532,19 +532,19 @@ impl PythonPackagingPolicy {
             PythonResource::ModuleSource(module) => {
                 if !self.include_test && module.is_test {
                     false
-                } else {
+                } else if module.is_stdlib {
                     self.include_distribution_sources
+                } else {
+                    true
                 }
             }
             PythonResource::ModuleBytecodeRequest(module) => self.include_test || !module.is_test,
             PythonResource::ModuleBytecode(_) => false,
             PythonResource::PackageResource(resource) => {
-                if resource.is_stdlib {
-                    if self.include_distribution_resources {
-                        self.include_test || !resource.is_test
-                    } else {
-                        false
-                    }
+                if !self.include_test && resource.is_test {
+                    false
+                } else if resource.is_stdlib {
+                    self.include_distribution_resources
                 } else {
                     true
                 }
