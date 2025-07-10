@@ -208,7 +208,7 @@ pub fn read_built_extensions(state_dir: &Path) -> Result<Vec<PythonExtensionModu
                 dynamic_library: None,
                 dynamic_filename: None,
                 framework: false,
-                system: true, // experiment: any libraries linked should be all good to add a -l flag to anyway.
+                system: false, // experiment: any libraries linked should be all good to add a -l flag to anyway.
             })
             .collect();
 

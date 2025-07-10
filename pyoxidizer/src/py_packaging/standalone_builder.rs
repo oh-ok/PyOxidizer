@@ -23,7 +23,6 @@ use {
     },
     crate::environment::Environment,
     anyhow::{anyhow, Context, Result},
-    itertools::Itertools,
     log::warn,
     once_cell::sync::Lazy,
     pyo3_build_config::{BuildFlag, BuildFlags, PythonImplementation, PythonVersion},
@@ -457,26 +456,6 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
             .iter()
             .find(|s| s.starts_with("vcruntime:"))
             .map(|s| (s.split(':').nth(1).unwrap()[0..2].to_string(), platform))
-    }
-
-    fn rustc_args(&self) -> Vec<String> {
-        let mut flags = vec![];
-        if self
-            .target_distribution
-            .build_options
-            .contains(&"lto".to_string())
-        {
-            // In future, we would use the bundled `rust-lld` for this, but since that's
-            // not stable yet, we have to hope that the user has a compatible version
-            // of `lld` installed.
-            if self.host_triple.split("-").contains(&"windows") {
-                flags.push("-Clinker=lld-link".to_string());
-            } else {
-                flags.push("-Clink-args=-fuse-ld=lld".to_string());
-            }
-        }
-
-        flags
     }
 
     fn cache_tag(&self) -> &str {
@@ -2824,7 +2803,7 @@ pub mod tests {
                         dynamic_library: None,
                         dynamic_filename: None,
                         framework: false,
-                        system: true,
+                        system: false,
                     }],
                 ),
                 BinaryLibpythonLinkMode::Default => {

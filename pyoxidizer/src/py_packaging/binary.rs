@@ -409,9 +409,6 @@ pub trait PythonBinaryBuilder {
         env: &Environment,
         opt_level: &str,
     ) -> Result<EmbeddedPythonContext>;
-
-    // Obtain any rustc flags for building the distribution.
-    fn rustc_args(&self) -> Vec<String>;
 }
 
 #[cfg(test)]
