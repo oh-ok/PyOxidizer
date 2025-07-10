@@ -103,6 +103,7 @@ SYMBOL_ATTRIBUTES = {
         "is_resource",
         "open_resource",
         "resource_path",
+        "files",
     },
     "OxidizedZipFinder": {
         "create_module",

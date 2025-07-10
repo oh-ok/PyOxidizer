@@ -125,6 +125,73 @@ class TestImporterResourceReading(unittest.TestCase):
         self.assertEqual(r.open_resource("child0/a.txt").getvalue(), b"a")
         self.assertEqual(r.open_resource("child1/b.txt").getvalue(), b"b")
 
+    def test_traversable_paths(self):
+        p = self._make_package("my_package")
+
+        child_path = p / "child0"
+        sub_child_path = child_path / "child1"
+        sub_child_resource = sub_child_path / "b.txt"
+
+        child_path.mkdir()
+        sub_child_path.mkdir()
+
+        with sub_child_resource.open("wb") as fh:
+            fh.write(b"content")
+
+        f = self._finder_from_td()
+        r = f.get_resource_reader("my_package")
+
+        self.assertIsInstance(r, OxidizedResourceReader)
+
+        self.assertEqual(r.contents(), [sub_child_resource.relative_to(p).as_posix()])
+        files = r.files()
+
+        sub_child_path_tr1 = files / "child0/child1"
+        sub_child_path_tr2 = files / "child0" / "child1"
+        sub_child_resource_tr1 = files / "child0/child1/b.txt"
+        sub_child_resource_tr2 = files / "child0" / "child1" / "b.txt"
+
+        self.assertEqual(sub_child_path_tr1, sub_child_path_tr2)
+        self.assertEqual(sub_child_resource_tr1, sub_child_resource_tr2)
+
+    def test_traversable_files(self):
+        p = self._make_package("my_package")
+
+        child_path = p / "child0"
+        sub_child_path = child_path / "child1"
+        sub_child_resource = sub_child_path / "b.txt"
+
+        child_path.mkdir()
+        sub_child_path.mkdir()
+
+        content = b"content"
+
+        with sub_child_resource.open("wb") as fh:
+            fh.write(content)
+
+        f = self._finder_from_td()
+        r = f.get_resource_reader("my_package")
+
+        self.assertIsInstance(r, OxidizedResourceReader)
+
+        self.assertEqual(r.contents(), [sub_child_resource.relative_to(p).as_posix()])
+
+        files = r.files()
+
+        tr1 = files / "child0/child1/b.txt"
+        tr2 = files.joinpath("child0", "child1", "b.txt")
+
+        self.assertEqual(tr1, tr2)
+        self.assertEqual(tr1.name, "b.txt")
+        self.assertEqual(tr1.read_bytes(), tr2.read_bytes())
+        self.assertEqual(tr1.read_bytes(), content)
+
+        with tr1.open() as fh:
+            self.assertEqual(fh.read(), content)
+
+        with tr2.open("r", encoding="utf-8") as fh:
+            self.assertEqual(fh.read(), content.decode("utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()
