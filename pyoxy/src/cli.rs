@@ -43,7 +43,8 @@ fn run_normal(exe: &Path) -> Result<i32> {
                     .action(ArgAction::Append)
                     .num_args(0..)
                     .value_parser(value_parser!(OsString))
-                    .last(true),
+                    .allow_hyphen_values(true)
+                    .trailing_var_arg(true),
             ),
     );
 
@@ -64,7 +65,8 @@ fn run_normal(exe: &Path) -> Result<i32> {
                     .action(ArgAction::Append)
                     .num_args(0..)
                     .value_parser(value_parser!(OsString))
-                    .last(true),
+                    .allow_hyphen_values(true)
+                    .trailing_var_arg(true),
             ),
     );
 
