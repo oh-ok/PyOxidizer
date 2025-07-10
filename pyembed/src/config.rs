@@ -526,11 +526,65 @@ impl<'a> OxidizedPythonInterpreterConfig<'a> {
             .as_ref()
             .map(|x| PathBuf::from(x.display().to_string().replace("$ORIGIN", &origin_string)));
 
+        let executable = self.interpreter_config.executable.as_ref().map(|x| {
+            if let Some(s) = x.to_str() {
+                PathBuf::from(s.replace("$ORIGIN", &origin_string))
+            } else {
+                x.to_path_buf()
+            }
+        });
+
+        let prefix = self.interpreter_config.prefix.as_ref().map(|x| {
+            if let Some(s) = x.to_str() {
+                PathBuf::from(s.replace("$ORIGIN", &origin_string))
+            } else {
+                x.to_path_buf()
+            }
+        });
+
+        let exec_prefix = self.interpreter_config.exec_prefix.as_ref().map(|x| {
+            if let Some(s) = x.to_str() {
+                PathBuf::from(s.replace("$ORIGIN", &origin_string))
+            } else {
+                x.to_path_buf()
+            }
+        });
+
+        let base_prefix = self.interpreter_config.base_prefix.as_ref().map(|x| {
+            if let Some(s) = x.to_str() {
+                PathBuf::from(s.replace("$ORIGIN", &origin_string))
+            } else {
+                x.to_path_buf()
+            }
+        });
+
+        let base_exec_prefix = self.interpreter_config.base_exec_prefix.as_ref().map(|x| {
+            if let Some(s) = x.to_str() {
+                PathBuf::from(s.replace("$ORIGIN", &origin_string))
+            } else {
+                x.to_path_buf()
+            }
+        });
+
+        let home = self.interpreter_config.home.as_ref().map(|x| {
+            if let Some(s) = x.to_str() {
+                PathBuf::from(s.replace("$ORIGIN", &origin_string))
+            } else {
+                x.to_path_buf()
+            }
+        });
+
         Ok(ResolvedOxidizedPythonInterpreterConfig {
             inner: Self {
                 exe: Some(exe),
                 origin: Some(origin),
                 interpreter_config: PythonInterpreterConfig {
+                    prefix,
+                    exec_prefix,
+                    base_prefix,
+                    base_exec_prefix,
+                    executable,
+                    home,
                     module_search_paths,
                     ..self.interpreter_config
                 },
