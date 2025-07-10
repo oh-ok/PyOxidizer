@@ -67,9 +67,15 @@ impl<'a> Config<'a> {
             // emit warnings about the paths not existing.
             if let Ok(exe) = std::env::current_exe() {
                 if let Some(exe_dir) = exe.parent() {
-                    self.interpreter_config.home = Some(exe_dir.to_path_buf());
-                    self.interpreter_config.prefix = Some(exe_dir.to_path_buf());
-                    self.interpreter_config.exec_prefix = Some(exe_dir.to_path_buf());
+                    if self.interpreter_config.home.is_none() {
+                        self.interpreter_config.home = Some(exe_dir.to_path_buf());
+                    }
+                    if self.interpreter_config.prefix.is_none() {
+                        self.interpreter_config.prefix = Some(exe_dir.to_path_buf());
+                    }
+                    if self.interpreter_config.exec_prefix.is_none() {
+                        self.interpreter_config.exec_prefix = Some(exe_dir.to_path_buf());
+                    }
                 }
             }
         }
