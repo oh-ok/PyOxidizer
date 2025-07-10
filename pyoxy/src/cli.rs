@@ -32,6 +32,15 @@ fn run_normal(exe: &Path) -> Result<i32> {
     let app = Command::new("pyoxy")
         .version(PYOXY_VERSION)
         .author("Gregory Szorc <gregory.szorc@gmail.com>")
+        .arg(
+            Arg::new("args")
+                .help("Arguments to Python interpreter")
+                .action(ArgAction::Append)
+                .num_args(0..)
+                .value_parser(value_parser!(OsString))
+                .allow_hyphen_values(true)
+                .trailing_var_arg(true),
+        )
         .arg_required_else_help(true);
 
     let app = app.subcommand(
@@ -92,6 +101,13 @@ fn run_normal(exe: &Path) -> Result<i32> {
                 .collect::<Vec<_>>();
 
             run_yaml_path(yaml_path, &program_args)
+        }
+        None => {
+            let program_args = matches
+                .get_many::<OsString>("args")
+                .unwrap_or_default()
+                .collect::<Vec<_>>();
+            run_python(exe, &program_args)
         }
         _ => Err(anyhow!("invalid sub-command")),
     }
