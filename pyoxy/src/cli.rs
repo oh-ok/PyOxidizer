@@ -15,11 +15,15 @@ use {
 const PYOXY_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn run() -> Result<i32> {
-    let exe = std::env::args_os().next().map(PathBuf::from).context("resolving current executable")?;
+    let exe = std::env::current_exe().context("resolving current executable")?;
+    let run_name = std::env::args_os()
+        .next()
+        .map(PathBuf::from)
+        .context("resolving argv0")?;
 
     // If the current executable looks like `python`, we effectively dispatch to
     // `pyoxy run-python -- <args>`.
-    if let Some(stem) = exe.file_stem() {
+    if let Some(stem) = run_name.file_stem() {
         if stem.to_string_lossy().starts_with("python") {
             return run_python(&exe, &std::env::args_os().skip(1).collect::<Vec<_>>());
         }
@@ -107,6 +111,7 @@ fn run_normal(exe: &Path) -> Result<i32> {
                 .get_many::<OsString>("args")
                 .unwrap_or_default()
                 .collect::<Vec<_>>();
+
             run_python(exe, &program_args)
         }
         _ => Err(anyhow!("invalid sub-command")),
