@@ -15,7 +15,7 @@ use {
 const PYOXY_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn run() -> Result<i32> {
-    let exe = std::env::current_exe().context("resolving current executable")?;
+    let exe = std::env::args_os().next().map(PathBuf::from).context("resolving current executable")?;
 
     // If the current executable looks like `python`, we effectively dispatch to
     // `pyoxy run-python -- <args>`.
