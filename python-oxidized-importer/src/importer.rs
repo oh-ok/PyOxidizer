@@ -13,7 +13,7 @@ for importing Python modules from memory.
 use {
     crate::memory_dll::{free_library_memory, get_proc_address_memory, load_library_memory},
     pyo3::exceptions::PySystemError,
-    std::ffi::{c_char, c_void, CString},
+    std::ffi::{c_void, CString},
 };
 use {
     crate::{
@@ -38,11 +38,18 @@ use {
     std::sync::Arc,
 };
 
+#[cfg(all(windows, not(Py_3_11)))]
+use std::os::raw::c_char;
+
 // Redefine needed private Python C API.
 #[cfg(all(windows, not(Py_3_11)))]
 extern "C" {
-    pub fn _PyImport_FindExtensionObject(a: *mut PyObject, b: *mut PyObject) -> *mut PyObject;
     pub static mut _Py_PackageContext: *const c_char;
+}
+
+#[cfg(all(windows, not(Py_3_11)))]
+extern "C" {
+    pub fn _PyImport_FindExtensionObject(a: *mut PyObject, b: *mut PyObject) -> *mut PyObject;
 }
 
 #[cfg(windows)]
@@ -603,13 +610,7 @@ impl OxidizedFinder {
             None => return Ok(py.None()),
         };
 
-        #[cfg(Py_3_11)]
-        {
-            Ok(py.None())
-        }
-
         // Extension modules need special module creation logic.
-        #[cfg(not(Py_3_11))]
         if module.flavor == ModuleFlavor::Extension {
             // We need a custom implementation of create_module() for in-memory shared
             // library extensions because if we wait until `exec_module()` to
@@ -619,7 +620,14 @@ impl OxidizedFinder {
             // If we ever implement our own lazy module importer, we could
             // potentially work around this and move all extension module
             // initialization into `exec_module()`.
-            if let Some(library_data) = &module.in_memory_extension_module_shared_library() {
+
+            #[cfg(all(windows, Py_3_11))]
+            let library_data = module.in_memory_extension_module_shared_library();
+
+            #[cfg(not(all(windows, Py_3_11)))]
+            let library_data: Option<&[u8]> = None;
+
+            if let Some(library_data) = library_data {
                 let sys_modules = state.sys_module.getattr(py, "modules")?;
 
                 extension_module_shared_library_create_module(
