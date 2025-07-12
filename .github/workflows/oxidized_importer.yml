@@ -60,7 +60,7 @@ jobs:
           python3 -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels
           path: |
@@ -94,7 +94,7 @@ jobs:
           python3 -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels
           path: |
@@ -128,7 +128,7 @@ jobs:
           python -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels
           path: |
