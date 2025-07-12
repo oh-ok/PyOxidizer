@@ -39,11 +39,9 @@ use {
 };
 
 // Redefine needed private Python C API.
-#[cfg(windows)]
+#[cfg(all(windows, not(Py_3_11)))]
 extern "C" {
-    #[cfg(not(Py_3_11))]
     pub fn _PyImport_FindExtensionObject(a: *mut PyObject, b: *mut PyObject) -> *mut PyObject;
-    #[cfg(not(Py_3_12))]
     pub static mut _Py_PackageContext: *const c_char;
 }
 
@@ -66,7 +64,7 @@ type py_init_fn = extern "C" fn() -> *mut pyffi::PyObject;
 /// `_PyImport_LoadDynamicModuleWithSpec()` is more interesting. It takes a
 /// `FILE*` for the extension location, so we can't call it. So we need to
 /// reimplement it. Documentation of that is inline.
-#[cfg(all(windows, not(Py_3_12)))]
+#[cfg(all(windows, not(Py_3_11)))]
 fn extension_module_shared_library_create_module(
     resources_state: &PythonResourcesState<u8>,
     sys_modules: &Bound<PyAny>,
@@ -77,29 +75,13 @@ fn extension_module_shared_library_create_module(
 ) -> PyResult<Py<PyAny>> {
     let py = sys_modules.py();
 
-    #[cfg(not(Py_3_11))]
-    {
-        let origin = PyString::new(py, "memory");
-        let existing_module =
-            unsafe { pyffi::_PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
+    let origin = PyString::new(py, "memory");
+    let existing_module =
+        unsafe { pyffi::_PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
 
-        // We found an existing module object. Return it.
-        if !existing_module.is_null() {
-            return Ok(unsafe { PyObject::from_owned_ptr(py, existing_module) });
-        }
-    }
-    #[cfg(Py_3_11)]
-    {
-        // This is a little bit of a hack to get around the removal of the above API.
-        // py2exe also used the above hack, so we're following their lead here.
-        if unsafe { pyffi::PyMapping_HasKey(sys_modules.as_ptr(), name_py.as_ptr()) } != 0 {
-            let existing_module =
-                unsafe { pyffi::PyObject_GetItem(sys_modules.as_ptr(), name_py.as_ptr()) };
-
-            if !existing_module.is_null() {
-                return Ok(unsafe { PyObject::from_owned_ptr(py, existing_module) });
-            }
-        }
+    // We found an existing module object. Return it.
+    if !existing_module.is_null() {
+        return Ok(unsafe { PyObject::from_owned_ptr(py, existing_module) });
     }
 
     // An error occurred calling _PyImport_FindExtensionObjectEx(). Raise it.
@@ -143,7 +125,7 @@ fn extension_module_shared_library_create_module(
 }
 
 /// Reimplementation of `_PyImport_LoadDynamicModuleWithSpec()`.
-#[cfg(all(windows, not(Py_3_12)))]
+#[cfg(all(windows, not(Py_3_11)))]
 fn load_dynamic_library(
     py: Python,
     sys_modules: &Bound<PyAny>,
@@ -621,13 +603,13 @@ impl OxidizedFinder {
             None => return Ok(py.None()),
         };
 
-        #[cfg(Py_3_12)]
+        #[cfg(Py_3_11)]
         {
             Ok(py.None())
         }
 
         // Extension modules need special module creation logic.
-        #[cfg(not(Py_3_12))]
+        #[cfg(not(Py_3_11))]
         if module.flavor == ModuleFlavor::Extension {
             // We need a custom implementation of create_module() for in-memory shared
             // library extensions because if we wait until `exec_module()` to
