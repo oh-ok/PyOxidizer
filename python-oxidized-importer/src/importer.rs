@@ -621,6 +621,11 @@ impl OxidizedFinder {
             None => return Ok(py.None()),
         };
 
+        #[cfg(Py_3_12)]
+        {
+            Ok(py.None())
+        }
+
         // Extension modules need special module creation logic.
         #[cfg(not(Py_3_12))]
         if module.flavor == ModuleFlavor::Extension {
@@ -654,8 +659,6 @@ impl OxidizedFinder {
         } else {
             Ok(py.None())
         }
-
-        Ok(py.None())
     }
 
     fn exec_module(slf: &Bound<Self>, module: &Bound<PyAny>) -> PyResult<Py<PyAny>> {
