@@ -1,6 +1,22 @@
+## :warning:
+
+`PyOxidizer` has been in a ["zombie state"](https://web.archive.org/web/20240406010838/https://gregoryszorc.com/blog/2024/03/17/my-shifting-open-source-priorities/)
+since January 2023, receiving occasional dependency version bumps
+until November 2024. Since then there have been [talks](https://github.com/indygreg/PyOxidizer/issues/751#issuecomment-2663867908)
+about moving the project under the [PyO3 organisation](https://github.com/PyO3)
+but little action from both parties, leaving the official `PyOxidizer`
+project using deprecated, insecure and less feature-full Python versions.
+
+This fork aims to update the managed Rust toolchain and Python versions,
+while generally enhance the user experience of `PyOxidizer`. This could mean
+breaking changes from the original `PyOxidizer` project. With that in mind,
+[ntamas/PyOxidizer](https://github.com/ntamas/PyOxidizer) is another
+well-maintained fork targeting recent Python versions that may suit your
+needs better.
+
 # PyOxidizer
 
-[![Build Status](https://github.com/indygreg/PyOxidizer/workflows/.github/workflows/pyoxidizer.yml/badge.svg)](https://github.com/indygreg/PyOxidizer/actions)
+[![Build Status](https://github.com/oh-ok/PyOxidizer/workflows/.github/workflows/pyoxidizer.yml/badge.svg)](https://github.com/oh-ok/PyOxidizer/actions)
 
 `PyOxidizer` is a utility for producing binaries that embed Python.
 The over-arching goal of `PyOxidizer` is to make complex packaging and
