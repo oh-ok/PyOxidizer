@@ -13,13 +13,6 @@ jobs:
       matrix:
         py:
           - arch: 'aarch64'
-            build: 'cp38-manylinux_aarch64'
-          - arch: 'i686'
-            build: 'cp38-manylinux_i686'
-          - arch: 'x86_64'
-            build: 'cp38-manylinux_x86_64'
-
-          - arch: 'aarch64'
             build: 'cp39-manylinux_aarch64'
           - arch: 'i686'
             build: 'cp39-manylinux_i686'
@@ -32,6 +25,13 @@ jobs:
             build: 'cp310-manylinux_i686'
           - arch: 'x86_64'
             build: 'cp310-manylinux_x86_64'
+
+          - arch: 'aarch64'
+            build: 'cp311-manylinux_aarch64'
+          - arch: 'i686'
+            build: 'cp311-manylinux_i686'
+          - arch: 'x86_64'
+            build: 'cp311-manylinux_x86_64'
     runs-on: ubuntu-22.04
     env:
       CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
@@ -71,9 +71,9 @@ jobs:
       fail-fast: false
       matrix:
         py:
-          - build: 'cp38-macosx_x86_64'
           - build: 'cp39-macosx_x86_64'
           - build: 'cp310-macosx_x86_64'
+          - build: 'cp311-macosx_x86_64'
     runs-on: macos-12
     env:
       CIBW_BUILD: ${{ matrix.py.build }}
@@ -105,9 +105,9 @@ jobs:
       fail-fast: false
       matrix:
         py:
-          - build: 'cp38-win_amd64'
           - build: 'cp39-win_amd64'
           - build: 'cp310-win_amd64'
+          - build: 'cp311-win_amd64'
     runs-on: windows-2022
     env:
       CIBW_BUILD_VERBOSITY: '1'
