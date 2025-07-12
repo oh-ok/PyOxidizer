@@ -41,9 +41,10 @@ use {
 // Redefine needed private Python C API.
 #[cfg(windows)]
 extern "C" {
-    pub static mut _Py_PackageContext: *const c_char;
     #[cfg(not(Py_3_11))]
     pub fn _PyImport_FindExtensionObject(a: *mut PyObject, b: *mut PyObject) -> *mut PyObject;
+    #[cfg(not(Py_3_12))]
+    pub static mut _Py_PackageContext: *const c_char;
 }
 
 #[cfg(windows)]
@@ -65,7 +66,7 @@ type py_init_fn = extern "C" fn() -> *mut pyffi::PyObject;
 /// `_PyImport_LoadDynamicModuleWithSpec()` is more interesting. It takes a
 /// `FILE*` for the extension location, so we can't call it. So we need to
 /// reimplement it. Documentation of that is inline.
-#[cfg(windows)]
+#[cfg(all(windows, not(Py_3_12)))]
 fn extension_module_shared_library_create_module(
     resources_state: &PythonResourcesState<u8>,
     sys_modules: &Bound<PyAny>,
@@ -142,7 +143,7 @@ fn extension_module_shared_library_create_module(
 }
 
 /// Reimplementation of `_PyImport_LoadDynamicModuleWithSpec()`.
-#[cfg(windows)]
+#[cfg(all(windows, not(Py_3_12)))]
 fn load_dynamic_library(
     py: Python,
     sys_modules: &Bound<PyAny>,
@@ -621,6 +622,7 @@ impl OxidizedFinder {
         };
 
         // Extension modules need special module creation logic.
+        #[cfg(not(Py_3_12))]
         if module.flavor == ModuleFlavor::Extension {
             // We need a custom implementation of create_module() for in-memory shared
             // library extensions because if we wait until `exec_module()` to
@@ -652,6 +654,8 @@ impl OxidizedFinder {
         } else {
             Ok(py.None())
         }
+
+        Ok(py.None())
     }
 
     fn exec_module(slf: &Bound<Self>, module: &Bound<PyAny>) -> PyResult<Py<PyAny>> {
