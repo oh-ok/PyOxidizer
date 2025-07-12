@@ -25,7 +25,7 @@ pub fn path_to_pathlib_path<'p>(py: Python<'p>, path: &Path) -> PyResult<Bound<'
 }
 
 #[cfg(unix)]
-pub fn pyobject_to_pathbuf<'p>(value: Bound<'p, PyAny>) -> PyResult<PathBuf> {
+pub fn pyobject_to_pathbuf(value: Bound<PyAny>) -> PyResult<PathBuf> {
     let os = value.py().import("os")?;
 
     let encoded = os
@@ -38,7 +38,8 @@ pub fn pyobject_to_pathbuf<'p>(value: Bound<'p, PyAny>) -> PyResult<PathBuf> {
 }
 
 #[cfg(windows)]
-pub fn pyobject_to_pathbuf(py: Python, value: &PyAny) -> PyResult<PathBuf> {
+pub fn pyobject_to_pathbuf(value: Bound<PyAny>) -> PyResult<PathBuf> {
+    let py = value.py();
     let os = py.import("os")?;
 
     // This conversion is a bit wonky. First, the PyObject could be of various

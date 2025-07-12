@@ -13,7 +13,7 @@ for importing Python modules from memory.
 use {
     crate::memory_dll::{free_library_memory, get_proc_address_memory, load_library_memory},
     pyo3::exceptions::PySystemError,
-    std::ffi::{c_void, CString},
+    std::ffi::{c_char, c_void, CString},
 };
 use {
     crate::{
@@ -37,6 +37,14 @@ use {
     python_packaging::resource::BytecodeOptimizationLevel,
     std::sync::Arc,
 };
+
+// Redefine needed private Python C API.
+#[cfg(windows)]
+extern "C" {
+    pub static mut _Py_PackageContext: *const c_char;
+    #[cfg(not(Py_3_11))]
+    pub fn _PyImport_FindExtensionObject(a: *mut PyObject, b: *mut PyObject) -> *mut PyObject;
+}
 
 #[cfg(windows)]
 #[allow(non_camel_case_types)]
@@ -66,14 +74,31 @@ fn extension_module_shared_library_create_module(
     name: &str,
     library_data: &[u8],
 ) -> PyResult<Py<PyAny>> {
-    let origin = PyString::new(py, "memory");
+    let py = sys_modules.py();
 
-    let existing_module =
-        unsafe { pyffi::_PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
+    #[cfg(not(Py_3_11))]
+    {
+        let origin = PyString::new(py, "memory");
+        let existing_module =
+            unsafe { pyffi::_PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
 
-    // We found an existing module object. Return it.
-    if !existing_module.is_null() {
-        return Ok(unsafe { PyObject::from_owned_ptr(py, existing_module) });
+        // We found an existing module object. Return it.
+        if !existing_module.is_null() {
+            return Ok(unsafe { PyObject::from_owned_ptr(py, existing_module) });
+        }
+    }
+    #[cfg(Py_3_11)]
+    {
+        // This is a little bit of a hack to get around the removal of the above API.
+        // py2exe also used the above hack, so we're following their lead here.
+        if unsafe { pyffi::PyMapping_HasKey(sys_modules.as_ptr(), name_py.as_ptr()) } != 0 {
+            let existing_module =
+                unsafe { pyffi::PyObject_GetItem(sys_modules.as_ptr(), name_py.as_ptr()) };
+
+            if !existing_module.is_null() {
+                return Ok(unsafe { PyObject::from_owned_ptr(py, existing_module) });
+            }
+        }
     }
 
     // An error occurred calling _PyImport_FindExtensionObjectEx(). Raise it.
@@ -120,9 +145,9 @@ fn extension_module_shared_library_create_module(
 #[cfg(windows)]
 fn load_dynamic_library(
     py: Python,
-    sys_modules: &PyAny,
-    spec: &PyAny,
-    name_py: &PyAny,
+    sys_modules: &Bound<PyAny>,
+    spec: &Bound<PyAny>,
+    name_py: &Bound<PyAny>,
     name: &str,
     library_module: *const c_void,
 ) -> PyResult<Py<PyAny>> {
@@ -151,10 +176,10 @@ fn load_dynamic_library(
 
     // Package context is needed for single-phase init.
     let py_module = unsafe {
-        let old_context = pyffi::_Py_PackageContext;
-        pyffi::_Py_PackageContext = name_cstring.as_ptr();
+        let old_context = _Py_PackageContext;
+        _Py_PackageContext = name_cstring.as_ptr();
         let py_module = init_fn();
-        pyffi::_Py_PackageContext = old_context;
+        _Py_PackageContext = old_context;
         py_module
     };
 
@@ -192,7 +217,7 @@ fn load_dynamic_library(
     // module by calling PyModule_FromDefAndSpec(). py_module is a borrowed reference. And
     // PyModule_FromDefAndSpec() returns a new reference. So we don't need to worry about refcounts
     // of py_module.
-    if unsafe { pyffi::PyObject_TypeCheck(py_module, &mut pyffi::PyModuleDef_Type) } != 0 {
+    if unsafe { pyffi::PyObject_TypeCheck(py_module, &raw mut pyffi::PyModuleDef_Type) } != 0 {
         let py_module = unsafe {
             pyffi::PyModule_FromDefAndSpec(py_module as *mut pyffi::PyModuleDef, spec.as_ptr())
         };
@@ -209,7 +234,7 @@ fn load_dynamic_library(
     // leak it.
     let py_module = unsafe { PyObject::from_owned_ptr(py, py_module) };
 
-    let mut module_def = unsafe { pyffi::PyModule_GetDef(py_module.as_ptr()) };
+    let module_def = unsafe { pyffi::PyModule_GetDef(py_module.as_ptr()) };
     if module_def.is_null() {
         return Err(PySystemError::new_err(format!(
             "initialization of {} did not return an extension module",
