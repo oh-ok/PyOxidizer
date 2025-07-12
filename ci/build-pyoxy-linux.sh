@@ -15,6 +15,9 @@ source ~/.cargo/env
 
 cd /pyoxidizer
 
+# Use LLVM's LLD if available.
+type lld &> /dev/null && export RUSTFLAGS='-Clink-arg=-fuse-ld=lld' 
+
 # Use PyOxidizer to generate embeddable files.
 pyoxidizer build \
   --system-rust \
