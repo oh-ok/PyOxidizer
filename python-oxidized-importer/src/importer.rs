@@ -621,31 +621,26 @@ impl OxidizedFinder {
             // potentially work around this and move all extension module
             // initialization into `exec_module()`.
 
-            #[cfg(all(windows, Py_3_11))]
-            let library_data = module.in_memory_extension_module_shared_library();
-
-            #[cfg(not(all(windows, Py_3_11)))]
-            let library_data: Option<&[u8]> = None;
-
-            if let Some(library_data) = library_data {
+            #[cfg(all(windows, not(Py_3_11)))]
+            if let Some(library_data) = module.in_memory_extension_module_shared_library() {
                 let sys_modules = state.sys_module.getattr(py, "modules")?;
 
-                extension_module_shared_library_create_module(
+                return extension_module_shared_library_create_module(
                     state.get_resources_state(),
                     sys_modules.bind(py),
                     &spec,
                     &name,
                     &key,
                     library_data,
-                )
-            } else {
-                // Call `imp.create_dynamic()` for dynamic extension modules.
-                let create_dynamic = state.imp_module.getattr(py, "create_dynamic")?;
-
-                state
-                    .call_with_frames_removed
-                    .call(py, (&create_dynamic, spec), None)
+                );
             }
+
+            // Call `imp.create_dynamic()` for dynamic extension modules.
+            let create_dynamic = state.imp_module.getattr(py, "create_dynamic")?;
+
+            state
+                .call_with_frames_removed
+                .call(py, (&create_dynamic, spec), None)
         } else {
             Ok(py.None())
         }
