@@ -30,7 +30,7 @@ jobs:
           path: target/x86_64-unknown-linux-musl/debug/pyoxidizer
 
   pyoxidizer-macos:
-    runs-on: 'macos-12'
+    runs-on: 'macos-13'
     steps:
       - uses: actions/checkout@v4
 
@@ -125,7 +125,7 @@ jobs:
         target_triple:
           - 'aarch64-apple-darwin'
           - 'x86_64-apple-darwin'
-    runs-on: 'macos-12'
+    runs-on: 'macos-13'
     env:
       IN_CI: '1'
       AWS_REGION: us-west-2
@@ -174,7 +174,7 @@ jobs:
           - '3.9'
           - '3.10'
           - '3.11'
-    runs-on: 'macos-12'
+    runs-on: 'macos-13'
     steps:
       - uses: actions/checkout@v4
         with:
