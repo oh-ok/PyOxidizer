@@ -62,7 +62,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: cibw-linux-{{ matrix.py.arch }}-{{ matrix.py.build }}
           path: |
             wheelhouse
 
@@ -96,7 +96,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: cibw-macos-{{ matrix.py.build }}
           path: |
             wheelhouse
 
@@ -130,6 +130,6 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: cibw-windows-{{ matrix.py.build }}
           path: |
             wheelhouse
