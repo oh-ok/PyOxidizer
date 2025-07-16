@@ -43,13 +43,9 @@ use std::os::raw::c_char;
 
 // Redefine needed private Python C API.
 #[cfg(all(windows, not(Py_3_11)))]
+#[cfg_attr(windows, link(name = "pythonXY"))]
 extern "C" {
     pub static mut _Py_PackageContext: *const c_char;
-}
-
-#[cfg(all(windows, not(Py_3_11)))]
-extern "C" {
-    pub fn _PyImport_FindExtensionObject(a: *mut PyObject, b: *mut PyObject) -> *mut PyObject;
 }
 
 #[cfg(windows)]
