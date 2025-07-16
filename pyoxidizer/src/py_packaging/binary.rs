@@ -409,6 +409,8 @@ pub trait PythonBinaryBuilder {
         env: &Environment,
         opt_level: &str,
     ) -> Result<EmbeddedPythonContext>;
+
+    fn rust_flags(&self) -> Option<Vec<String>>;
 }
 
 #[cfg(test)]

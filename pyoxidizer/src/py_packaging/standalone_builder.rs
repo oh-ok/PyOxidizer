@@ -1060,6 +1060,14 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
 
         Ok(context)
     }
+
+    fn rust_flags(&self) -> Option<Vec<String>> {
+        if self.host_triple.ends_with("gnu") && self.target_distribution.build_options.contains(&"lto".to_string()) {
+            Some(vec!["-Clink-arg=-fuse-ld=lld".to_string()])
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
