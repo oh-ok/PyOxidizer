@@ -1206,6 +1206,7 @@ impl PythonDistribution for StandaloneDistribution {
             "linux-aarch64" => "manylinux2014_aarch64",
             "linux-x86_64" => "manylinux2014_x86_64",
             "linux-i686" => "manylinux2014_i686",
+            "macosx-10.5-x86_64" => "macosx_10_5_x86_64",
             "macosx-10.9-x86_64" => "macosx_10_9_x86_64",
             "macosx-11.0-arm64" => "macosx_11_0_arm64",
             "win-amd64" => "win_amd64",
@@ -1466,11 +1467,13 @@ impl PythonDistribution for StandaloneDistribution {
                         .sort_by(|a, b| a.file_name().cmp(b.file_name()))
                         .into_iter()
                     {
-                        let entry = entry?;
+                        let entry = entry.with_context(|| {
+                            format!("resolving distribution tcl library path {}", subdir)
+                        })?;
 
                         let path = entry.path();
 
-                        if path.is_dir() {
+                        if !path.is_file() {
                             continue;
                         }
 
