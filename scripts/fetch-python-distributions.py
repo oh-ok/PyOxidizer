@@ -39,7 +39,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--api-token", help="GitHub API token", required=True)
     parser.add_argument(
-        "--tag", help="python-build-standalone release tag", default="20250212"
+        "--tag", help="python-build-standalone release tag", default="20250106"
     )
 
     args = parser.parse_args()
