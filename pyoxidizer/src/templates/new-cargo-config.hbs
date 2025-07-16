@@ -17,3 +17,6 @@
 #
 #[target.x86_64-pc-windows-msvc]
 #rustflags = ["-C", "target-feature=+crt-static", "-C", "link-args=/FORCE:MULTIPLE"]
+
+[target.'cfg(unix)']
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]

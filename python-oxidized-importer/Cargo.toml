@@ -72,4 +72,7 @@ extension-module = ["pyo3/extension-module"]
 zipimport = ["zip"]
 
 [build-dependencies]
-pyo3-build-config = { version = "0.25.1", features = ["resolve-config"] }
+pyo3-build-config = { version = "0.25.1", features = [
+    "resolve-config",
+    "python3-dll-a",
+] }

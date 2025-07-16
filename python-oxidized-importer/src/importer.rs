@@ -115,7 +115,7 @@ fn extension_module_shared_library_create_module(
     })
 }
 
-#[cfg(unix)]
+#[cfg(not(all(windows, not(Py_3_11))))]
 fn extension_module_shared_library_create_module(
     _resources_state: &PythonResourcesState<u8>,
     _sys_modules: &Bound<PyAny>,
@@ -124,7 +124,9 @@ fn extension_module_shared_library_create_module(
     _name: &str,
     _library_data: &[u8],
 ) -> PyResult<Py<PyAny>> {
-    panic!("should only be called on Windows");
+    Err(PyTypeError::new_err(
+        "In-memory shared extension modules are not available in this configuration",
+    ))
 }
 
 /// Reimplementation of `_PyImport_LoadDynamicModuleWithSpec()`.
@@ -617,7 +619,6 @@ impl OxidizedFinder {
             // potentially work around this and move all extension module
             // initialization into `exec_module()`.
 
-            #[cfg(all(windows, not(Py_3_11)))]
             if let Some(library_data) = module.in_memory_extension_module_shared_library() {
                 let sys_modules = state.sys_module.getattr(py, "modules")?;
 
