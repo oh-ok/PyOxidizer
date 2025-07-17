@@ -76,6 +76,7 @@ jobs:
           - build: 'cp311-macosx_x86_64'
     runs-on: macos-13
     env:
+      MACOSX_DEPLOYMENT_TARGET: '10.9'
       CIBW_BUILD: ${{ matrix.py.build }}
       CIBW_BUILD_VERBOSITY: '1'
     steps:
