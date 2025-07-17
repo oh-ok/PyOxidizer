@@ -30,8 +30,10 @@ pyoxidizer build \
 # Use PyOxidizer's embeddable files to build the pyoxy binary. Its
 # build script will hook things up to the pyembed crate.
 export PYO3_CONFIG_FILE=$(pwd)/pyoxy/${TARGET_DIR}/${TARGET_TRIPLE}/release/resources/pyo3-build-config-file.txt
+cd pyoxy || exit 1
+
 ~/.cargo/bin/cargo build \
-  --target-dir pyoxy/${TARGET_DIR} \
+  --target-dir ${TARGET_DIR} \
   --bin pyoxy \
   --release \
   --target ${TARGET_TRIPLE}

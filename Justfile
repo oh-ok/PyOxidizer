@@ -126,7 +126,8 @@ actions-build-pyoxy-macos triple python_version:
   export SDKROOT=/Applications/Xcode_14.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk
   export MACOSX_DEPLOYMENT_TARGET={{macosx_deployment_target}}
   pyoxidizer build --release --target-triple {{triple}} --path pyoxy --var PYTHON_VERSION {{python_version}}
-  PYO3_CONFIG_FILE=$(pwd)/pyoxy/build/{{triple}}/release/resources/pyo3-build-config-file.txt cargo build --bin pyoxy --target {{triple}} --release
+  cd pyoxy || exit 2
+  PYO3_CONFIG_FILE=$(pwd)/build/{{triple}}/release/resources/pyo3-build-config-file.txt cargo build --bin pyoxy --target {{triple}} --release
 
   mkdir upload
   cp target/{{triple}}/release/pyoxy upload/
