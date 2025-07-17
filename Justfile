@@ -7,7 +7,7 @@ macosx_deployment_target := if os() == "macos" {
   if arch() == "arm" {
     "11.0"
   } else {
-    "10.9"
+    "10.12"
   }
 } else {
   ""

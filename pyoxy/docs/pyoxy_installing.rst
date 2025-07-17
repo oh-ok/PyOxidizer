@@ -33,7 +33,7 @@ Specification. This should be ~every Linux distribution released since
 macOS
 -----
 
-The x86_64-apple-darwin binaries target macOS 10.9+.
+The x86_64-apple-darwin binaries target macOS 10.12+.
 
 The aarch64-apple-darwin binaries target macOS 11.0+.
 

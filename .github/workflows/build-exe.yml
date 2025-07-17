@@ -90,7 +90,7 @@ jobs:
           if [ "${{ matrix.target.triple }}" = "aarch64-apple-darwin" ]; then
             export MACOSX_DEPLOYMENT_TARGET=11.0
           elif [ "${{ matrix.target.triple }}" = "x86_64-apple-darwin" ]; then
-            export MACOSX_DEPLOYMENT_TARGET=10.9
+            export MACOSX_DEPLOYMENT_TARGET=10.12
           fi
 
           if [ -n "${{ matrix.target.cross }}" ]; then

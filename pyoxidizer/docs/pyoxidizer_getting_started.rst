@@ -40,7 +40,7 @@ architectures of the built-in Python distributions are:
 
 * Linux x86_64 (glibc 2.19 or musl linked)
 * Windows 8+ / Server 2012+ i686 and x86_64
-* macOS 10.9+ Intel x86_64 or 11.0+ ARM
+* macOS 10.12+ Intel x86_64 or 11.0+ ARM
 
 Other System Dependencies
 -------------------------

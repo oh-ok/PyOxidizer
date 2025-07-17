@@ -18,7 +18,7 @@ Operating System and Architecture Requirements
 PyOxidizer has support for targeting x86_64 (Intel) and aarch64 (ARM)
 Apple devices. The default
 :ref:`Python distributions <packaging_python_distributions>` target
-macOS 10.9+ for x86_64 and 11.0+ for aarch64.
+macOS 10.12+ for x86_64 and 11.0+ for aarch64.
 
 .. _pyoxidizer_distributing_macos_build_machine_requirements:
 
@@ -65,7 +65,7 @@ has gone to great lengths to ensure that the Python distributions only link
 against external libraries and symbols that are present on a default macOS
 installation.
 
-The default Python distributions are built to target macOS 10.9 on x86_64 and
+The default Python distributions are built to target macOS 10.12 on x86_64 and
 11.0 on aarch64. So they should *just work* on those and any newer versions
 of macOS.
 
@@ -103,7 +103,7 @@ environment variable during the build to the oldest version of macOS you
 want to support.
 
 The default :ref:`Python distributions <packaging_python_distributions>` target
-macOS 10.9 on x86_64 and 11.0 on aarch64.
+macOS 10.12 on x86_64 and 11.0 on aarch64.
 
 .. important::
 

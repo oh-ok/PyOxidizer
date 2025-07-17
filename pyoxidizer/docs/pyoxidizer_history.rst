@@ -973,7 +973,7 @@ Backwards Compatibility Notes
   the OS version that the Python distribution was built to target. Previously,
   binaries would likely target the OS version of the building machine unless
   explicit action was taken. The practical effect of this change is binaries
-  targeting x86_64 should now work on macOS 10.9 without any end-user action
+  targeting x86_64 should now work on macOS 10.12 without any end-user action
   required.
 * Documentation URLs for PyOxidizer now all consistently begin with
   ``pyoxidizer_``. Many old documentation URLs no longer work.
