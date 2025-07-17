@@ -41,6 +41,7 @@ use {
 // Redefine needed private Python C API.
 #[cfg_attr(windows, link(name = "pythonXY"))]
 extern "C" {
+    #[cfg(windows)]
     #[cfg(not(Py_3_11))]
     pub static mut _Py_PackageContext: *const c_char;
 }
