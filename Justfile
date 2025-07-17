@@ -45,6 +45,7 @@ actions-bootstrap-rust-linux: actions-install-sccache-linux
   sudo apt install -y --no-install-recommends libpcsclite-dev musl-tools lld
 
 actions-bootstrap-rust-macos: actions-install-sccache-macos
+  sudo brew install lld
 
 actions-bootstrap-rust-windows: actions-install-sccache-windows
 
