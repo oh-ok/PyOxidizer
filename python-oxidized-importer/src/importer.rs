@@ -9,11 +9,11 @@ This module defines a Python meta path importer and associated functionality
 for importing Python modules from memory.
 */
 
-#[cfg(windows)]
+#[cfg(all(windows, not(Py_3_11)))]
 use {
     crate::memory_dll::{free_library_memory, get_proc_address_memory, load_library_memory},
     pyo3::exceptions::PySystemError,
-    std::ffi::{c_void, CString},
+    std::ffi::{c_char, c_void, CString},
 };
 use {
     crate::{
@@ -38,13 +38,10 @@ use {
     std::sync::Arc,
 };
 
-#[cfg(all(windows, not(Py_3_11)))]
-use std::os::raw::c_char;
-
 // Redefine needed private Python C API.
-#[cfg(all(windows, not(Py_3_11)))]
 #[cfg_attr(windows, link(name = "pythonXY"))]
 extern "C" {
+    #[cfg(not(Py_3_11))]
     pub static mut _Py_PackageContext: *const c_char;
 }
 
@@ -67,7 +64,8 @@ type py_init_fn = extern "C" fn() -> *mut pyffi::PyObject;
 /// `_PyImport_LoadDynamicModuleWithSpec()` is more interesting. It takes a
 /// `FILE*` for the extension location, so we can't call it. So we need to
 /// reimplement it. Documentation of that is inline.
-#[cfg(all(windows, not(Py_3_11)))]
+#[cfg(windows)]
+#[cfg(not(Py_3_11))]
 fn extension_module_shared_library_create_module(
     resources_state: &PythonResourcesState<u8>,
     sys_modules: &Bound<PyAny>,
@@ -115,7 +113,7 @@ fn extension_module_shared_library_create_module(
     })
 }
 
-#[cfg(not(all(windows, not(Py_3_11))))]
+#[cfg(any(unix, Py_3_11))]
 fn extension_module_shared_library_create_module(
     _resources_state: &PythonResourcesState<u8>,
     _sys_modules: &Bound<PyAny>,
@@ -130,7 +128,8 @@ fn extension_module_shared_library_create_module(
 }
 
 /// Reimplementation of `_PyImport_LoadDynamicModuleWithSpec()`.
-#[cfg(all(windows, not(Py_3_11)))]
+#[cfg(windows)]
+#[cfg(not(Py_3_11))]
 fn load_dynamic_library(
     py: Python,
     sys_modules: &Bound<PyAny>,

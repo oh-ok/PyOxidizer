@@ -35,11 +35,13 @@ use {
 
 // Since these are technically a private implementation detail,
 // they're not exported by pyo3, so we need to define them.
-#[cfg(not(PyPy))]
-#[cfg(Py_3_11)]
+#[cfg_attr(windows, link(name = "pythonXY"))]
 extern "C" {
+    #[cfg(all(Py_3_11, not(PyPy)))]
     pub static mut _PyImport_FrozenBootstrap: *const pyffi::_frozen;
+    #[cfg(all(Py_3_11, not(PyPy)))]
     pub static mut _PyImport_FrozenStdlib: *const pyffi::_frozen;
+    #[cfg(all(Py_3_11, not(PyPy)))]
     pub static mut _PyImport_FrozenTest: *const pyffi::_frozen;
 }
 

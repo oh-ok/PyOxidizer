@@ -1,14 +1,9 @@
 use pyo3_build_config::{get, use_pyo3_cfgs, InterpreterConfig, PythonVersion};
 
-const PY311: PythonVersion = PythonVersion {
-    major: 3,
-    minor: 11,
-};
-
 // nabbed from pyo3-ffi
 fn emit_link_config(interpreter_config: &InterpreterConfig) -> Result<(), String> {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").map_err(|e| e.to_string())?;
-    if "windows" == target_os.as_str() && interpreter_config.version < PY311 {
+    if "windows" == target_os.as_str() {
         println!(
             "cargo:rustc-link-lib={link_model}{alias}{lib_name}",
             link_model = if interpreter_config.shared {
