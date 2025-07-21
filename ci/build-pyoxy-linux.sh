@@ -9,14 +9,9 @@ set -ex
 
 TARGET_TRIPLE=$1
 PYTHON_VERSION=$2
-TARGET_DIR=$3
+TARGET_DIR="$(pwd)/$3"
 
 source ~/.cargo/env
-
-cd /pyoxidizer
-
-# Use LLVM's LLD if available.
-type lld &> /dev/null && export RUSTFLAGS='-Clink-arg=-fuse-ld=lld' 
 
 # Use PyOxidizer to generate embeddable files.
 pyoxidizer build \
@@ -29,8 +24,7 @@ pyoxidizer build \
 
 # Use PyOxidizer's embeddable files to build the pyoxy binary. Its
 # build script will hook things up to the pyembed crate.
-export PYO3_CONFIG_FILE=$(pwd)/pyoxy/${TARGET_DIR}/${TARGET_TRIPLE}/release/resources/pyo3-build-config-file.txt
-cd pyoxy || exit 1
+export PYO3_CONFIG_FILE=${TARGET_DIR}/${TARGET_TRIPLE}/release/resources/pyo3-build-config-file.txt
 
 ~/.cargo/bin/cargo build \
   --target-dir ${TARGET_DIR} \

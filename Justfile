@@ -86,15 +86,16 @@ pyoxy-build-linux target_triple python_version:
   cargo build --bin pyoxidizer --target x86_64-unknown-linux-musl
 
   rm -rf target/docker
-  mkdir -p target/docker
+  mkdir -m 777 -p target/docker
 
   docker run \
     --rm \
     -it \
+    -w /pyoxidizer \
     -v $(pwd):/pyoxidizer \
     -v $(pwd)/target/x86_64-unknown-linux-musl/debug/pyoxidizer:/usr/bin/pyoxidizer \
     linux-portable-binary:latest \
-    /pyoxidizer/ci/build-pyoxy-linux.sh {{target_triple}} {{python_version}} ../target/docker
+    /pyoxidizer/ci/build-pyoxy-linux.sh {{target_triple}} {{python_version}} target/docker
 
 pyoxy-build-linux-stage pyoxy_version triple python_version:
   #!/usr/bin/env bash
@@ -126,8 +127,7 @@ actions-build-pyoxy-macos triple python_version:
   export SDKROOT=/Applications/Xcode_14.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk
   export MACOSX_DEPLOYMENT_TARGET={{macosx_deployment_target}}
   pyoxidizer build --release --target-triple {{triple}} --path pyoxy --var PYTHON_VERSION {{python_version}}
-  cd pyoxy || exit 2
-  PYO3_CONFIG_FILE=$(pwd)/build/{{triple}}/release/resources/pyo3-build-config-file.txt cargo build --bin pyoxy --target {{triple}} --release
+  PYO3_CONFIG_FILE=$(pwd)/build/{{triple}}/release/resources/pyo3-build-config-file.txt cargo build --bin pyoxy --target {{triple}} --target-dir=../target --release
 
   mkdir upload
   cp target/{{triple}}/release/pyoxy upload/
@@ -145,7 +145,7 @@ ci-run-all branch="ci-test":
   just ci-run pyoxidizer.yml {{branch}}
   just ci-run pyoxy.yml {{branch}}
   just ci-run sphinx.yml {{branch}}
-  just ci-run workspace.yml {{branch}}
+  just ci-run workspace.yml {{branch}}f
   just ci-run workspace-python.yml {{branch}}
 
 _remote-sign-exe ref workflow run_id artifact exe_name rcodesign_branch="main":
