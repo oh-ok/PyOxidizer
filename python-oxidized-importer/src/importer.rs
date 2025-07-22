@@ -47,6 +47,7 @@ extern "C" {
 }
 
 #[cfg(windows)]
+#[cfg(not(Py_3_11))]
 #[allow(non_camel_case_types)]
 type py_init_fn = extern "C" fn() -> *mut pyffi::PyObject;
 

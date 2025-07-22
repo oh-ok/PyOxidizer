@@ -1,4 +1,4 @@
-use pyo3_build_config::{get, use_pyo3_cfgs, InterpreterConfig, PythonVersion};
+use pyo3_build_config::{get, use_pyo3_cfgs, InterpreterConfig};
 
 // nabbed from pyo3-ffi
 fn emit_link_config(interpreter_config: &InterpreterConfig) -> Result<(), String> {

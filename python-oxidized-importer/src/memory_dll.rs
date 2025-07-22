@@ -94,11 +94,13 @@ pub(crate) unsafe fn load_library_memory(
     )
 }
 
+#[allow(dead_code)]
 /// Free a library that was loaded from memory.
 pub(crate) unsafe fn free_library_memory(module: *const c_void) {
     MemoryFreeLibrary(module);
 }
 
+#[allow(dead_code)]
 /// Find the address of a symbol in a memory loaded module.
 pub(crate) unsafe fn get_proc_address_memory(module: *const c_void, name: &CStr) -> FARPROC {
     MemoryGetProcAddress(module, name.as_ptr())
