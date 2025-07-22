@@ -73,7 +73,7 @@ actions-build-pyoxy-linux target_triple python_version:
     -v /usr/local/bin/pyoxidizer:/usr/bin/pyoxidizer \
     pyoxidizer:build \
     env RUSTFLAGS='-Clinker-plugin-lto=/usr/local/lib/LLVMgold.so' \
-      /pyoxidizer/ci/build-pyoxy-linux.sh {{target_triple}} {{python_version}} build
+      /pyoxidizer/ci/build-pyoxy-linux.sh {{target_triple}} {{python_version}} pyoxy/build
 
   mkdir upload
   cp pyoxy/build/{{target_triple}}/release/pyoxy upload/
@@ -87,8 +87,8 @@ pyoxy-build-linux target_triple python_version:
   (cd ci && docker build -f linux-portable-binary.Dockerfile -t linux-portable-binary:latest .)
   cargo build --bin pyoxidizer --target x86_64-unknown-linux-musl
 
-  rm -rf target/docker
-  mkdir -m 777 -p target/docker
+  mkdir -p target/docker
+  chmod 777 target/docker
 
   docker run \
     --rm \
