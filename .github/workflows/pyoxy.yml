@@ -69,11 +69,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/rust-bootstrap
-        with:
-          rust_toolchain: '1.81'
-          rust_target: ${{ matrix.target_triple }}
-
       - name: Download PyOxidizer Executable
         uses: actions/download-artifact@v4
         with:
@@ -148,7 +143,7 @@ jobs:
 
       - uses: ./.github/actions/rust-bootstrap
         with:
-          rust_toolchain: '1.81'
+          rust_toolchain: stable
           rust_target: ${{ matrix.target_triple }}
 
       - name: Download PyOxidizer Executable
