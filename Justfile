@@ -131,7 +131,7 @@ actions-build-pyoxy-macos triple python_version:
   export MACOSX_DEPLOYMENT_TARGET={{macosx_deployment_target}}
   export RUSTFLAGS="-Clink-arg=-fuse-ld=lld"
   pyoxidizer build --release --target-triple {{triple}} --path pyoxy --var PYTHON_VERSION {{python_version}}
-  PYO3_CONFIG_FILE=$(pwd)/build/{{triple}}/release/resources/pyo3-build-config-file.txt cargo build --bin pyoxy --target {{triple}} --target-dir=../target --release
+  PYO3_CONFIG_FILE=$(pwd)/pyoxy/build/{{triple}}/release/resources/pyo3-build-config-file.txt cargo build --bin pyoxy --target {{triple}} --target-dir=../target --release
 
   mkdir upload
   cp target/{{triple}}/release/pyoxy upload/
