@@ -26,7 +26,14 @@ jobs:
     steps:
       - name: Install musl compiler
         run: |
-          sudo apt install -y --no-install-recommends musl-tools lld
+          sudo apt install -y --no-install-recommends musl-tools
+
+      - name: Setup lld
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          echo "eval \"\$($(brew --prefix)/bin/brew shellenv)\"" >> ~/.bashrc
+          brew install lld@19
+          brew link lld@19
 
       - name: Download Executable
         uses: actions/download-artifact@v4
