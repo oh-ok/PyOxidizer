@@ -42,10 +42,9 @@ actions-install-sccache-windows:
   mv sccache-v0.3.3-x86_64-pc-windows-msvc/sccache.exe C:/Users/runneradmin/.cargo/bin/sccache.exe
 
 actions-bootstrap-rust-linux: actions-install-sccache-linux
-  sudo apt install -y --no-install-recommends libpcsclite-dev musl-tools lld
+  sudo apt install -y --no-install-recommends libpcsclite-dev musl-tools
 
 actions-bootstrap-rust-macos: actions-install-sccache-macos
-  brew install lld
 
 actions-bootstrap-rust-windows: actions-install-sccache-windows
 
