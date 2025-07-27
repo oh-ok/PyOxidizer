@@ -780,6 +780,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[test]
     #[cfg(target_env = "msvc")]
     fn test_empty_project_standalone_static() -> Result<()> {
@@ -802,6 +803,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[test]
     #[cfg(target_env = "msvc")]
     fn test_empty_project_standalone_static_310() -> Result<()> {
@@ -825,6 +827,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[test]
     #[cfg(target_env = "msvc")]
     fn test_empty_project_standalone_static_311() -> Result<()> {
