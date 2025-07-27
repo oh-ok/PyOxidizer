@@ -22,18 +22,17 @@ jobs:
   pyoxidizer-linux-x86_64-bin-check:
     needs:
       - pyoxidizer-exes
-    runs-on: 'ubuntu-24.04'
+    runs-on: 'ubuntu-22.04'
     steps:
       - name: Install musl compiler
         run: |
           sudo apt install -y --no-install-recommends musl-tools
 
-      - name: Setup lld
+      - name: Install LLVM lld
         run: |
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-          echo "eval \"\$($(brew --prefix)/bin/brew shellenv)\"" >> ~/.bashrc
           brew install lld@19
-          brew link lld@19
+          echo "PATH=$(brew --prefix lld@19)/bin:$PATH" >> $GITHUB_ENV
 
       - name: Download Executable
         uses: actions/download-artifact@v4
@@ -56,7 +55,9 @@ jobs:
     runs-on: 'macos-13'
     steps:
       - name: Install LLVM lld
-        run: brew install lld
+        run: |
+          brew install lld@19
+          echo "PATH=$(brew --prefix lld@19)/bin:$PATH" >> $GITHUB_ENV
 
       - name: Download macOS Executable
         uses: actions/download-artifact@v4
