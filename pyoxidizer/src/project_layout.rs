@@ -225,13 +225,21 @@ pub fn write_new_cargo_lock(
 
     if let PyembedLocation::Git(url, commit) = pyembed_location {
         for package in lock_file.packages.iter_mut() {
-            if !package.version.pre.is_empty() && package.source.is_none() {
+            if [
+                "pyembed",
+                "python-packaging",
+                "python-packed-resources",
+                "python-oxidized-importer",
+            ]
+            .contains(&package.name.as_str())
+            {
                 package.source = Some(
                     cargo_lock::SourceId::for_git(
                         &url::Url::from_str(url).context("parsing Git url")?,
                         cargo_lock::package::GitReference::Rev(commit.clone()),
                     )
-                    .context("constructing Cargo.lock Git source")?,
+                    .context("constructing Cargo.lock Git source")?
+                    .with_precise(Some(commit.clone())),
                 );
             }
         }
