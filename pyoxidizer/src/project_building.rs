@@ -189,12 +189,12 @@ impl BuildEnvironment {
         }
 
         if !rust_flags.is_empty() {
-            let extra_flags = rust_flags.join(" ");
+            let extra_flags = rust_flags.join("\x1f");
 
             envs.insert(
-                "RUSTFLAGS".to_string(),
-                if let Ok(value) = std::env::var("RUSTFLAGS") {
-                    format!("{} {}", extra_flags, value)
+                "CARGO_ENCODED_RUSTFLAGS".to_string(),
+                if let Ok(value) = std::env::var("CARGO_ENCODED_RUSTFLAGS") {
+                    format!("{}\x1f{}", extra_flags, value)
                 } else {
                     extra_flags
                 },
