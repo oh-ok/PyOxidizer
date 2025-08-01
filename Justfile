@@ -96,7 +96,7 @@ pyoxy-build-linux target_triple python_version:
     -v $(pwd):/pyoxidizer \
     -v $(pwd)/target/x86_64-unknown-linux-musl/debug/pyoxidizer:/usr/bin/pyoxidizer \
     linux-portable-binary:latest \
-    env RUSTFLAGS='-Clinker-plugin-lto=/usr/local/lib/LLVMgold.so' \
+    env \
       /pyoxidizer/ci/build-pyoxy-linux.sh {{target_triple}} {{python_version}} target/docker
 
 pyoxy-build-linux-stage pyoxy_version triple python_version:
@@ -128,7 +128,6 @@ actions-build-pyoxy-macos triple python_version:
 
   export SDKROOT=/Applications/Xcode_14.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk
   export MACOSX_DEPLOYMENT_TARGET={{macosx_deployment_target}}
-  export RUSTFLAGS="-Clink-arg=-fuse-ld=lld"
   pyoxidizer build --release --target-triple {{triple}} --path pyoxy --var PYTHON_VERSION {{python_version}}
   PYO3_CONFIG_FILE=$(pwd)/pyoxy/build/{{triple}}/release/resources/pyo3-build-config-file.txt cargo build --bin pyoxy --target {{triple}} --target-dir=target --release
 

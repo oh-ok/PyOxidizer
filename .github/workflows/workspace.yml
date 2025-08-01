@@ -55,14 +55,6 @@ jobs:
           rust_toolchain: ${{ matrix.rust_toolchain }}
           rust_target: ${{ matrix.target.triple }}
 
-      - name: Install LLVM lld (Unix)
-        if: ${{ ! startsWith(matrix.target.os, 'windows-') }}
-        run: |
-          [[ "$(uname -s | tr [:upper:] [:lower:] )" =~ linux ]] \
-              && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-          brew install lld@19
-          echo "PATH=$(brew --prefix lld@19)/bin:$PATH" >> $GITHUB_ENV
-
       - name: Build Workspace
         env:
           RUSTC_WRAPPER: sccache

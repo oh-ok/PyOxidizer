@@ -348,6 +348,7 @@ impl Environment {
                     rust_version: rustc_version::VersionMeta::for_command(
                         std::process::Command::new(toolchain.rustc_path),
                     )?,
+                    sysroot: toolchain.path,
                 }
             } else {
                 self.system_rust_environment()?
@@ -411,6 +412,17 @@ impl Environment {
             rustc_version::VersionMeta::for_command(std::process::Command::new(&rustc_exe))
                 .context("resolving rustc version")?;
 
+        let proc = std::process::Command::new(&rustc_exe)
+            .args(["--print", "sysroot"])
+            .output()
+            .context("resolving rustc sysroot")?;
+        if !proc.status.success() {
+            return Err(anyhow!("could not resolve rustc sysroot"));
+        };
+        let sysroot = String::from_utf8(proc.stdout.trim_ascii_end().to_vec())
+            .context("decoding rustc sysroot")?;
+        let sysroot = sysroot.into();
+
         if rust_version.semver.lt(&MINIMUM_RUST_VERSION) {
             return Err(anyhow!(
                 "PyOxidizer requires Rust {}; {} is version {}",
@@ -424,6 +436,7 @@ impl Environment {
             cargo_exe,
             rustc_exe,
             rust_version,
+            sysroot,
         })
     }
 
@@ -492,6 +505,7 @@ impl Environment {
     }
 }
 
+const TOOLS_REL: [&str; 4] = ["lib", "rustlib", env!("TARGET"), "bin"];
 /// Represents an available Rust toolchain.
 #[derive(Clone, Debug)]
 pub struct RustEnvironment {
@@ -503,4 +517,22 @@ pub struct RustEnvironment {
 
     /// Describes rustc version info.
     pub rust_version: rustc_version::VersionMeta,
+
+    /// Path to `sysroot`
+    pub sysroot: PathBuf,
+}
+
+impl RustEnvironment {
+    pub fn find_tools(&self) -> Result<PathBuf> {
+        let mut dir = self.sysroot.clone();
+        for item in TOOLS_REL {
+            dir.push(item)
+        }
+
+        if dir.is_dir() {
+            Ok(dir)
+        } else {
+            Err(anyhow!("No such directory {dir:?}"))
+        }
+    }
 }

@@ -41,19 +41,6 @@ RUN apt-get install --force-yes \
 # We use `curl --insecure` throughout this file. This is reasonably safe since
 # we validate the SHA-256 of all downloaded files to prevent tampering.
 
-RUN curl --insecure -L https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz > zstd.tar.gz && \
-  echo 'eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3  zstd.tar.gz' | sha256sum -c - && \
-  mkdir zstd/ && \
-  tar -C zstd/ --strip 1 -xf zstd.tar.gz && \
-  make -C zstd -j `nproc` && \
-  make -C zstd -j `nproc` install prefix=/usr/local && \
-  rm -rf zstd.tar.gz zstd/
-
-RUN curl --insecure -L https://github.com/indygreg/toolchain-tools/releases/download/toolchain-bootstrap%2F20250308/llvm-20.1.0+20250308-gnu_only-x86_64-unknown-linux-gnu.tar.zst > llvm.tar.zst && \
-  echo '41d3d74e21e064e2e59a4e89feca74d58a5e9e95f73877f3c9ed82ca95607b47  llvm.tar.zst' | sha256sum -c - && \
-  tar -C /usr/local --strip 1 -I zstd -xf llvm.tar.zst && \
-  rm llvm.tar.zst
-
 # The binutils is Jessie is too old to link the python-build-standalone distributions
 # due to a R_X86_64_REX_GOTPCRELX relocation. So install a newer binutils.
 RUN curl --insecure https://ftp.gnu.org/gnu/binutils/binutils-2.36.1.tar.xz > binutils.tar.xz && \

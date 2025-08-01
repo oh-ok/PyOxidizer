@@ -49,14 +49,6 @@ jobs:
           rust_toolchain: stable
           rust_target: ${{ matrix.target.triple }}
 
-      - name: Install LLVM lld (Unix)
-        if: ${{ ! startsWith(matrix.target.os, 'windows-') }}
-        run: |
-          [[ "$(uname -s | tr [:upper:] [:lower:])" =~ linux ]] \
-              && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-          brew install lld@19
-          echo "PATH=$(brew --prefix lld@19)/bin:$PATH" >> $GITHUB_ENV
-
       # To minimize potential for Python interference, we delay install Python
       # until we need it for python-oxidized-importer/pyembed.
       - uses: actions/setup-python@v5
