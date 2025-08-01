@@ -26,8 +26,12 @@ pyoxidizer build \
 # build script will hook things up to the pyembed crate.
 export PYO3_CONFIG_FILE=${TARGET_DIR}/${TARGET_TRIPLE}/release/resources/pyo3-build-config-file.txt
 
+# Emulate `-Z linker-features=+lld`
+GCC_LD="$(rustc --print sysroot)/lib/rustlib/$(rustc --print sysroot | sed -Ee 's/.*\/[^\-]+-//')/bin/gcc-ld"
+
 ~/.cargo/bin/cargo build \
   --target-dir ${TARGET_DIR} \
   --bin pyoxy \
   --release \
+  --config "build.rustflags = [\"-C\", '''link-arg=-B${GCC_LD}''', \"-C\", \"link-arg=-fuse-ld=lld\"]" \
   --target ${TARGET_TRIPLE}

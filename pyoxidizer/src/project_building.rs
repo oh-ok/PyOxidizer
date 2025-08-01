@@ -422,10 +422,13 @@ pub fn build_python_executable<'a>(
     opt_level: &str,
     release: bool,
 ) -> Result<BuiltExecutable<'a>> {
-    let cargo_exe = env
+    let rust_toolchain = env
         .ensure_rust_toolchain(Some(target_triple))
-        .context("resolving Rust toolchain")?
-        .cargo_exe;
+        .context("resolving Rust toolchain")?;
+    let cargo_exe = &rust_toolchain.cargo_exe;
+    let gcc_ld = rust_toolchain
+        .find_tools()
+        .map_or(None, |p| Some(p.join("gcc-ld")));
 
     let temp_dir = env.temporary_directory("pyoxidizer")?;
 
@@ -441,6 +444,7 @@ pub fn build_python_executable<'a>(
         None,
         &[],
         exe.windows_subsystem(),
+        gcc_ld.as_ref(),
     )
     .context("initializing project")?;
 

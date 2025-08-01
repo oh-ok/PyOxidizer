@@ -135,14 +135,18 @@ fn populate_template_data(source: &PyOxidizerSource, data: &mut TemplateData) {
 }
 
 /// Write a new .cargo/config.toml file for a project path.
-pub fn write_new_cargo_config(project_path: &Path) -> Result<()> {
+pub fn write_new_cargo_config(project_path: &Path, gcc_ld: Option<&PathBuf>) -> Result<()> {
     let cargo_path = project_path.join(".cargo");
 
     if !cargo_path.is_dir() {
         std::fs::create_dir(&cargo_path)?;
     }
 
-    let data: BTreeMap<String, String> = BTreeMap::new();
+    let mut data: BTreeMap<String, String> = BTreeMap::new();
+    if let Some(Some(path)) = gcc_ld.map(|p| p.to_str()) {
+        data.insert("gcc_ld".to_string(), path.to_string());
+    }
+
     let t = HANDLEBARS.render("new-cargo-config", &data)?;
 
     let config_path = cargo_path.join("config.toml");
@@ -429,6 +433,7 @@ pub fn initialize_project(
     code: Option<&str>,
     pip_install: &[&str],
     windows_subsystem: &str,
+    gcc_ld: Option<&PathBuf>,
 ) -> Result<()> {
     let status = std::process::Command::new(cargo_exe)
         .arg("init")
@@ -445,7 +450,7 @@ pub fn initialize_project(
     let name = path.iter().last().unwrap().to_str().unwrap();
     update_new_cargo_toml(&path.join("Cargo.toml"), &source.as_pyembed_location())
         .context("updating Cargo.toml")?;
-    write_new_cargo_config(&path).context("writing cargo config")?;
+    write_new_cargo_config(&path, gcc_ld).context("writing cargo config")?;
     write_new_cargo_lock(&path, name, &source.as_pyembed_location())
         .context("writing Cargo.lock")?;
     write_new_build_rs(&path.join("build.rs"), name).context("writing build.rs")?;

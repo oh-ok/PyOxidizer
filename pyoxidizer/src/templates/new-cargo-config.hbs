@@ -17,3 +17,15 @@
 #
 #[target.x86_64-pc-windows-msvc]
 #rustflags = ["-C", "target-feature=+crt-static", "-C", "link-args=/FORCE:MULTIPLE"]
+
+[target.'cfg(target_env = "msvc")']
+linker = "rust-lld"
+rustflags = ["-C", "linker-flavor=link"]
+
+[target.'cfg(not(target_env = "msvc"))']
+rustflags = [
+    "-C", "link-arg=-fuse-ld=lld",
+{{ #if gcc_ld }}
+    "-C", '''link-arg=-B{{{ gcc_ld }}}''',
+{{ /if }}
+]

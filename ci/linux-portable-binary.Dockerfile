@@ -36,6 +36,7 @@ RUN apt-get install --force-yes \
   gcc-multilib \
   make \
   musl-tools \
+  clang \
   xz-utils
 
 # We use `curl --insecure` throughout this file. This is reasonably safe since
@@ -59,6 +60,9 @@ RUN curl --insecure https://ftp.gnu.org/gnu/binutils/binutils-2.36.1.tar.xz > bi
   make install -j `nproc` && \
   cd .. && \
   rm -rf binutils-objdir
+
+# We use link clang as cc here to gain access tp `-fuse-ld=lld`
+RUN ln -sf "$(which clang)" /usr/local/bin/cc
 
 USER build
 

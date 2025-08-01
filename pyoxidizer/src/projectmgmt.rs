@@ -347,6 +347,7 @@ pub fn init_rust_project(env: &Environment, project_path: &Path) -> Result<()> {
         None,
         &[],
         "console",
+        None,
     )?;
     println!();
     println!(
