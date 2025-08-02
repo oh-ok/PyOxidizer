@@ -333,16 +333,17 @@ impl Environment {
                 // Compiler complains about lifetimes without the closure.
                 #[allow(clippy::redundant_closure)]
                 let target_triple = target_triple.unwrap_or_else(|| default_target_triple());
-
+                let host_triple = default_target_triple();
                 let toolchain = install_rust_toolchain(
                     RUST_TOOLCHAIN_VERSION,
-                    default_target_triple(),
+                    host_triple,
                     &[target_triple],
                     &self.rust_dir(),
                     Some(&self.rust_dir()),
                 )?;
 
                 RustEnvironment {
+                    host_triple: host_triple.to_string(),
                     cargo_exe: toolchain.cargo_path,
                     rustc_exe: toolchain.rustc_path.clone(),
                     rust_version: rustc_version::VersionMeta::for_command(
@@ -423,6 +424,21 @@ impl Environment {
             .context("decoding rustc sysroot")?;
         let sysroot = sysroot.into();
 
+        let proc = std::process::Command::new(&rustc_exe)
+            .args(["--version", "--verbose"])
+            .output()
+            .context("resolving rustc host triple")?;
+
+        let output = String::from_utf8(proc.stdout.trim_ascii_end().to_vec())?;
+        let host_triple = if let Some(host) = output.split("\n").find(|e| e.starts_with("host:")) {
+            host.strip_prefix("host:")
+                .unwrap_or(host)
+                .trim()
+                .to_string()
+        } else {
+            env!("TARGET").to_string()
+        };
+
         if rust_version.semver.lt(&MINIMUM_RUST_VERSION) {
             return Err(anyhow!(
                 "PyOxidizer requires Rust {}; {} is version {}",
@@ -433,6 +449,7 @@ impl Environment {
         }
 
         Ok(RustEnvironment {
+            host_triple,
             cargo_exe,
             rustc_exe,
             rust_version,
@@ -505,10 +522,12 @@ impl Environment {
     }
 }
 
-const TOOLS_REL: [&str; 4] = ["lib", "rustlib", env!("TARGET"), "bin"];
 /// Represents an available Rust toolchain.
 #[derive(Clone, Debug)]
 pub struct RustEnvironment {
+    /// The triple of the host toolchain.
+    pub host_triple: String,
+
     /// Path to `cargo` executable.
     pub cargo_exe: PathBuf,
 
@@ -525,7 +544,7 @@ pub struct RustEnvironment {
 impl RustEnvironment {
     pub fn find_tools(&self) -> Result<PathBuf> {
         let mut dir = self.sysroot.clone();
-        for item in TOOLS_REL {
+        for item in ["lib", "rustlib", &self.host_triple, "bin"] {
             dir.push(item)
         }
 

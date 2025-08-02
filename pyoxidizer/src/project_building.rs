@@ -4,7 +4,7 @@
 
 use {
     crate::{
-        environment::{canonicalize_path, Environment, RustEnvironment},
+        environment::{canonicalize_path, default_target_triple, Environment, RustEnvironment},
         licensing::{licenses_from_cargo_manifest, log_licensing_info},
         project_layout::initialize_project,
         py_packaging::{
