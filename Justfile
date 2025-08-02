@@ -71,7 +71,6 @@ actions-build-pyoxy-linux target_triple python_version:
     -v $(pwd):/pyoxidizer \
     -v /usr/local/bin/pyoxidizer:/usr/bin/pyoxidizer \
     pyoxidizer:build \
-    env RUSTFLAGS='-Clinker-plugin-lto=/usr/local/lib/LLVMgold.so' \
       /pyoxidizer/ci/build-pyoxy-linux.sh {{target_triple}} {{python_version}} pyoxy/build
 
   mkdir upload
